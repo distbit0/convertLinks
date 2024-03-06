@@ -48,14 +48,23 @@ def open_in_browser(url):
 
 
 def convert_youtube(url, openingToRead):
-    return url
+    if openingToRead:
+        return url
+    videoId = url.split("v=")[-1]
+    newUrl = "https://invidious.perennialte.ch/watch?v=" + videoId
+    return newUrl
 
 
 def convert_rumble(url, openingToRead):
+    if openingToRead:
+        return url
+
     return url
 
 
 def convert_podcast(url, openingToRead):
+    if openingToRead:
+        return url
     return url
 
 
