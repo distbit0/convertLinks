@@ -6,6 +6,7 @@ from os import path
 import convertDiscord
 import convertTelegram
 import convertYoutube
+import convertPodcast
 import convertGitbook
 import traceback
 
@@ -51,7 +52,6 @@ def open_in_browser(url):
 def convert_youtube(url, openingToRead):
     videoId = url.split("v=")[-1]
     videoUrl = f"https://www.youtube.com/watch?v={videoId}"
-    print(videoUrl)
     return convertYoutube.main(videoUrl)
 
 
@@ -63,9 +63,7 @@ def convert_rumble(url, openingToRead):
 
 
 def convert_podcast(url, openingToRead):
-    if openingToRead:
-        return url
-    return url
+    return convertPodcast.main(url)
 
 
 def convert_twitter(url, openingToRead):

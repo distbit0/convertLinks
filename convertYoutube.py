@@ -101,7 +101,7 @@ def main(video_url):
         grouped_segments = []
         i = 0
         currentGroup = []
-        print("downloading chunk ", i, "of", len(audio_chunks))
+        print("downloading chunk ", i + 1, "of", len(audio_chunks))
         audio_file = open(chunk_filename, "rb")
         audio_segment = AudioSegment.from_file(chunk_filename, format="mp3")
         chunk_duration = len(audio_segment) / 1000  # Duration in seconds
