@@ -17,10 +17,14 @@ def getConfig():
 
 
 sys.path.append(getConfig()["gistWriteDir"])
-from writeGist import writeContent
+from writeGist import writeContent, getGistUrl
 
 
-def writeGist(text, name, guid=None, gist_id=None):
+def writeGist(text, name, guid=None, gist_id=None, update=True):
+    if not update:
+        gistUrl = getGistUrl(guid)
+        if gistUrl:
+            return gistUrl
     tmpFile = getAbsPath("tmp.txt")
     with open(tmpFile, "w") as f:
         f.write(text)

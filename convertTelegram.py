@@ -1,8 +1,6 @@
 from os import path
-import json
-import subprocess
 import re
-import utils
+import utilities
 from telethon import TelegramClient
 from telethon.tl.types import MessageEmpty
 from dotenv import load_dotenv
@@ -13,8 +11,6 @@ load_dotenv()
 api_id = os.getenv("TELEGRAM_API_ID")
 api_hash = os.getenv("TELEGRAM_API_HASH")
 session_name = os.getenv("TELEGRAM_SESSION_NAME")
-
-client = TelegramClient(session_name, api_id, api_hash)
 
 
 def extract_chat_id_and_message_id(url):
@@ -27,7 +23,7 @@ def extract_chat_id_and_message_id(url):
     return None, None
 
 
-async def fetch_messages(chat_id, initial_message_id):
+async def fetch_messages(chat_id, initial_message_id, client):
     all_messages = []
     last_message_id = initial_message_id
 
@@ -59,7 +55,7 @@ def createHtmlFromMessages(messagesList, originalUrl):
     # Extract the first message content for the HTML title, removing non-alphabetic characters and limiting to 100 chars
     firstMsg = re.sub(r"[^a-zA-Z ]", "", messagesList[0].text) if messagesList else ""
 
-    html = ""
+    html = f'<p><a href="{originalUrl}">Link to Original Message</a></p>'
 
     for message in messagesList:
         # Skip empty messages
@@ -69,23 +65,26 @@ def createHtmlFromMessages(messagesList, originalUrl):
         username = message.sender.username if message.sender else "Unknown"
         content = message.text.replace("\n", "<br>") if message.text else ""
         messageLink = f"{originalUrl.split('?')[0]}?comment={message.id}"
+
         html += f'<p><a href="{messageLink}">{username}</a>: {content}</p>'
 
     return html, firstMsg[:50]
 
 
-async def primary(url):
+async def primary(url, client):
     chat_id, message_id = extract_chat_id_and_message_id(url)
     if chat_id and message_id:
-        all_messages = await fetch_messages(chat_id, message_id)
+        await client.get_dialogs()
+        all_messages = await fetch_messages(chat_id, message_id, client)
         html, firstMsg = createHtmlFromMessages(all_messages, url)
-        urlToOpen = utils.writeGist(html, "TELE: " + firstMsg, str(message_id))
+        urlToOpen = utilities.writeGist(html, "TELE: " + firstMsg, str(message_id))
         return urlToOpen
     else:
         return url
 
 
 def main(url):
+    client = TelegramClient(session_name, api_id, api_hash)
     with client:
-        urlToOpen = client.loop.run_until_complete(main(url))
+        urlToOpen = client.loop.run_until_complete(primary(url, client))
     return urlToOpen

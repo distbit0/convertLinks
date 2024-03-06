@@ -1,11 +1,13 @@
 import re
 import requests
 import html2text
-import utils
+import utilities
 
 
 def main(url):
     response = requests.get(url)
+    if not response.ok:
+        return False
     html_content = response.text
 
     # Convert HTML to Markdown using html2text
@@ -25,7 +27,12 @@ def main(url):
             title = " ".join(line.split(" ")[1:])
             break
 
+    # Add the original URL as a Markdown link at the top of the content
+    markdown_content = f"[Link to Original]({url})\n\n{markdown_content}"
+
     # Save the Markdown content to a Gist
-    gist_url = utils.writeGist(markdown_content, "GITB: " + title, unique_url)
+    gist_url = utilities.writeGist(
+        markdown_content, "GITB: " + title, unique_url, update=False
+    )
 
     return gist_url

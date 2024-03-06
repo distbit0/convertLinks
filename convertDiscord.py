@@ -7,7 +7,7 @@ import json
 import requests
 from dotenv import load_dotenv
 import os
-import utils
+import utilities
 
 load_dotenv()
 
@@ -111,7 +111,7 @@ def createHtmlFromJSON(messagesList, originalUrl):
         re.sub(r"[^a-zA-Z ]", "", messagesList[0]["content"]) if messagesList else ""
     )
 
-    html = ""
+    html = f'<p><a href="{originalUrl}">Link to Original Message</a></p>'
 
     for message in messagesList:
         # Skip empty messages
@@ -133,5 +133,5 @@ def main(url):
         return url
     all_messages = fetch_messages(channel_id, initial_message_id)
     html, firstMsg = createHtmlFromJSON(all_messages, url)
-    urlToOpen = utils.writeGist(html, "DISC: " + firstMsg, initial_message_id)
+    urlToOpen = utilities.writeGist(html, "DISC: " + firstMsg, initial_message_id)
     return urlToOpen

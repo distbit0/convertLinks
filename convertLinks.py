@@ -80,7 +80,7 @@ def convert_gitbook(url, openingToRead):
 def convert_telegram(url, openingToRead):
     if not openingToRead:
         return url
-    return convertTelegram.main(url)
+    return url  # convertTelegram.main(url)
 
 
 def convert_discord(url, openingToRead):
@@ -151,10 +151,16 @@ def convert_discourse(url, openingToRead):
     return tempUrl
 
 
+def convert_lesswrong(url, openingToRead):
+    url = url.replace("lesswrong.com", "greaterwrong.com").strip()
+    return url
+
+
 conversion_functions = {
     "/watch?v=": convert_youtube,
     "rumble.com": convert_rumble,
     "docs.": convert_gitbook,
+    "gitbook": convert_gitbook,
     "discord.com": convert_discord,
     "twitter.com": convert_twitter,
     "warpcast.com": convert_farcaster,
@@ -165,21 +171,32 @@ conversion_functions = {
     "https://t.me/c/": convert_telegram,
     "podcasts.apple.com": convert_podcast,
     "": convert_discourse,
+    "lesswrong.com": convert_lesswrong,
 }
 
 
-def process_url(url, openInBrowser, openingToRead):
+def process_url(originalUrl, openInBrowser, openingToRead):
     try:
+        url = str(originalUrl)
         for key, func in conversion_functions.items():
             if key in url:
                 url = func(url, openingToRead)
-        if openInBrowser:
-            open_in_browser(url)
-        return url
     except Exception as e:
         print(e)
         traceback.print_exc()
-        subprocess.run(["notify-send", "URL Processing Error", f"Error: {url}"])
+        subprocess.run(
+            ["notify-send", "URL Processing Error", f"Error: {url}" + str(e)]
+        )
+        if openInBrowser:
+            open_in_browser(originalUrl)
+        return False
+    else:
+        if openInBrowser:
+            if url:
+                open_in_browser(url)
+            else:
+                open_in_browser(originalUrl)
+        return url
 
 
 def main(text, openInBrowser, openingToRead):
@@ -203,7 +220,8 @@ def main(text, openInBrowser, openingToRead):
     else:
         for url in urls:
             processed_url = process_url(url, openInBrowser, openingToRead)
-            processed_urls.append(processed_url)
+            if process_url:
+                processed_urls.append(processed_url)
     return processed_urls
 
 
