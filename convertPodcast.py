@@ -110,7 +110,6 @@ def main(episode_url):
                     "Title: "
                     + title
                     + " Continuation of podcast episode (might begin mid-sentence): "
-                    + markdown_transcript[-100:]
                     if i > 0
                     else "Welcome to the podcast episode. "
                 ),

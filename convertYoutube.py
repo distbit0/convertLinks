@@ -96,10 +96,7 @@ def main(video_url):
         audio_segment = AudioSegment.from_file(chunk_filename, format="mp3")
         chunk_duration = len(audio_segment) / 1000  # Duration in seconds
         prompt = (
-            "Title: "
-            + title
-            + " Continuation of video (might begin mid-sentence): "
-            + markdown_transcript[-100:]
+            "Title: " + title + " Continuation of video (might begin mid-sentence): "
             if i > 0
             else "Welcome to my technical video. "
         )
