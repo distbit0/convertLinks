@@ -44,22 +44,12 @@ def get_podcast_episode_info(url):
     return None, None
 
 
-def deleteMp3sOlderThan(seconds, output_dir):
-    files = os.listdir(output_dir)
-    for file in files:
-        if file.split(".")[-1] in ["mp3", "webm", "part"]:
-            filePath = os.path.join(output_dir, file)
-            fileAge = time.time() - int(filePath.split("/")[-1].split(".")[0])
-            if fileAge > seconds:
-                os.remove(filePath)
-
-
 def download_podcast_episode(url, max_size_mb):
     # Set the output directory relative to the script's location
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, "tmp")
     os.makedirs(output_dir, exist_ok=True)
-    deleteMp3sOlderThan(60 * 60 * 12, output_dir)
+    utilities.deleteMp3sOlderThan(60 * 60 * 12, output_dir)
     currentTime = time.time()
     randomNumber = str(currentTime) + "_" + str(random.randint(1000000000, 9999999999))
 

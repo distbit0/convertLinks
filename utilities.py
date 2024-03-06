@@ -1,4 +1,5 @@
 import sys
+import time
 from os import path
 import json
 import os
@@ -38,3 +39,14 @@ def writeGist(text, name, guid=None, gist_id=None, update=True):
         return gistUrl.strip()
     else:
         return None
+
+
+def deleteMp3sOlderThan(seconds, output_dir):
+    files = os.listdir(output_dir)
+    for file in files:
+        if file.split(".")[-1] in ["mp3", "webm", "part"]:
+            filePath = os.path.join(output_dir, file)
+            fileAge = time.time() - int(filePath.split("/")[-1].split(".")[0])
+            if fileAge > seconds:
+                print("deleting file", filePath)
+                os.remove(filePath)
