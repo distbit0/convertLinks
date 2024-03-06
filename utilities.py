@@ -1,6 +1,8 @@
 import sys
 from os import path
 import json
+import os
+import random
 
 
 def getAbsPath(relPath):
@@ -25,11 +27,13 @@ def writeGist(text, name, guid=None, gist_id=None, update=True):
         gistUrl = getGistUrl(guid)
         if gistUrl:
             return gistUrl
-    tmpFile = getAbsPath("tmp.txt")
+    randomNumber = str(random.randint(1000000000, 9999999999))
+    tmpFile = getAbsPath(f"tmp/gist_{randomNumber}.txt")
     with open(tmpFile, "w") as f:
         f.write(text)
     gistUrl = "https://gist.github.com/" + gist_id if gist_id else None
     gistUrl = writeContent(gistUrl, guid, name, tmpFile)
+    os.remove(tmpFile)
     if "https://gist.github.com/" in gistUrl:
         return gistUrl.strip()
     else:

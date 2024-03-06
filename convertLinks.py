@@ -5,6 +5,7 @@ import threading
 from os import path
 import convertDiscord
 import convertTelegram
+import convertYoutube
 import convertGitbook
 import traceback
 
@@ -48,9 +49,11 @@ def open_in_browser(url):
 
 
 def convert_youtube(url, openingToRead):
-    if openingToRead:
-        return url
     videoId = url.split("v=")[-1]
+    # if openingToRead:
+    videoUrl = f"https://www.youtube.com/watch?v={videoId}"
+    print(videoUrl)
+    return convertYoutube.main(videoUrl)
     newUrl = "https://invidious.perennialte.ch/watch?v=" + videoId
     return newUrl
 
@@ -166,7 +169,7 @@ def convert_lesswrong(url, openingToRead):
 
 
 conversion_functions = {
-    "/watch?v=": convert_youtube,
+    "watch?v=": convert_youtube,
     "rumble.com": convert_rumble,
     "docs.": convert_gitbook,
     "gitbook": convert_gitbook,
