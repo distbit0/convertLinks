@@ -1,4 +1,5 @@
 import yt_dlp
+import time
 from pydub import AudioSegment
 from openai import OpenAI
 import random
@@ -10,12 +11,24 @@ from math import ceil
 load_dotenv()
 
 
+def deleteMp3sOlderThan(seconds, output_dir):
+    files = os.listdir(output_dir)
+    for file in files:
+        if file.split(".")[-1] in ["mp3", "webm", "part"]:
+            filePath = os.path.join(output_dir, file)
+            fileAge = time.time() - int(filePath.split("/")[-1].split(".")[0])
+            if fileAge > seconds:
+                os.remove(filePath)
+
+
 def download_youtube_video_as_mp3(url, max_size_mb):
     # Set the output directory relative to the script's location
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, "tmp")
     os.makedirs(output_dir, exist_ok=True)
-    randomNumber = str(random.randint(1000000000, 9999999999))
+    deleteMp3sOlderThan(60 * 60 * 12, output_dir)
+    currentTime = time.time()
+    randomNumber = str(currentTime) + "_" + str(random.randint(1000000000, 9999999999))
 
     # Configure yt-dlp options
     ydl_opts = {
@@ -34,7 +47,8 @@ def download_youtube_video_as_mp3(url, max_size_mb):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=True)
         title = info_dict["title"]
-        youtube_id = info_dict["id"]
+        YTduration = info_dict["duration"]
+        print("youtube duration", YTduration)
 
     # Get the downloaded MP3 file path
     mp3_file = os.path.join(output_dir, f"{randomNumber}.mp3")
@@ -47,31 +61,56 @@ def download_youtube_video_as_mp3(url, max_size_mb):
     total_chunks = ceil(len(audio) / chunk_size_bytes)
 
     # Split the audio into chunks
+    cumDurOfChunks = 0
     file_paths = []
     for i in range(total_chunks):
         start_time = i * chunk_size_bytes
         end_time = min((i + 1) * chunk_size_bytes, len(audio))
         chunk = audio[start_time:end_time]
         chunk_file = os.path.join(output_dir, f"{randomNumber}_chunk_{i+1}.mp3")
+        cumDurOfChunks += len(chunk) / 1000
         chunk.export(chunk_file, format="mp3")
         file_paths.append(chunk_file)
 
     os.remove(mp3_file)
+    print(
+        "origCumDurOfChunks",
+        cumDurOfChunks,
+        "YTduration",
+        YTduration,
+    )
+    videoScalingFactor = int(YTduration) / float(cumDurOfChunks)
+    print("videoScalingFactor", videoScalingFactor)
 
-    return file_paths, title
+    return file_paths, title, videoScalingFactor
 
 
 def main(video_url):
     youtubeId = video_url.split("v=")[-1].split("&")[0]
+    video_url = "https://www.youtube.com/watch?v=" + youtubeId
     gistUrl = utilities.getGistUrl(youtubeId)
     if gistUrl:
         return gistUrl
-    audio_chunks, title = download_youtube_video_as_mp3(video_url, 0.8)
+    audio_chunks, title, videoScalingFactor = download_youtube_video_as_mp3(
+        video_url, 0.8
+    )
     client = OpenAI()
     markdown_transcript = f"[Original Video]({video_url})\n\n"
+    sumOfPrevChunkDurations = 0
     for i, chunk_filename in enumerate(audio_chunks):
+        grouped_segments = []
+        i = 0
+        currentGroup = []
+        print("downloading chunk ", i, "of", len(audio_chunks))
         audio_file = open(chunk_filename, "rb")
-        prompt = markdown_transcript[-224:] if i > 0 else "This is a technical video."
+        audio_segment = AudioSegment.from_file(chunk_filename, format="mp3")
+        chunk_duration = len(audio_segment) / 1000  # Duration in seconds
+        prompt = (
+            "Continuation of my technical video follows (might begin mid-sentence). "
+            + markdown_transcript[-150:]
+            if i > 0
+            else "Welcome to my technical video. "
+        )
         transcript = client.audio.transcriptions.create(
             file=audio_file,
             model="whisper-1",
@@ -79,13 +118,12 @@ def main(video_url):
             timestamp_granularities=["segment"],
             prompt=prompt,
         )
-        grouped_segments = []
-        i = 0
-        currentGroup = []
         for segment in transcript.segments:
+            segment["start"] += sumOfPrevChunkDurations
+            segment["start"] *= videoScalingFactor
             currentGroup.append(segment)
             i += 1
-            if i % 7 == 0:
+            if i % 6 == 0:
                 startTime = currentGroup[0]["start"]
                 text = " ".join([segment["text"] for segment in currentGroup])
                 grouped_segments.append(
@@ -95,11 +133,22 @@ def main(video_url):
                     }
                 )
                 currentGroup = []
-        # vtt, srt or verbose_json.
+        if currentGroup:
+            startTime = currentGroup[0]["start"]
+            text = " ".join([segment["text"] for segment in currentGroup])
+            grouped_segments.append(
+                {
+                    "start": startTime,
+                    "text": text,
+                }
+            )
+        sumOfPrevChunkDurations += chunk_duration
 
         for segment in grouped_segments:
-            start_time = int(segment["start"] * 100) / 100
+            start_time = int(segment["start"])
             markdown_transcript += f"[{start_time}]({video_url}&t={int(start_time)}): {segment['text']}\n\n"
+
+    print("sumOfPrevChunkDurations", sumOfPrevChunkDurations)
 
     # Save the Markdown content to a Gist
     gist_url = utilities.writeGist(
