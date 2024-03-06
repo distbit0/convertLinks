@@ -114,6 +114,7 @@ def main(video_url):
         transcript = client.audio.transcriptions.create(
             file=audio_file,
             model="whisper-1",
+            language="en-US",
             response_format="verbose_json",
             timestamp_granularities=["segment"],
             prompt=prompt,

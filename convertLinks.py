@@ -196,16 +196,16 @@ def process_url(originalUrl, openInBrowser, openingToRead):
         subprocess.run(
             ["notify-send", "URL Processing Error", f"Error: {url}" + str(e)]
         )
-        if openInBrowser:
-            open_in_browser(originalUrl)
-        return False
+        open_in_browser(originalUrl)
+        return None
     else:
         if openInBrowser:
             if url:
-                open_in_browser(url)
+                return url
             else:
-                open_in_browser(originalUrl)
-        return url
+                return originalUrl
+        else:
+            return url
 
 
 def main(text, openInBrowser, openingToRead):
@@ -213,24 +213,30 @@ def main(text, openInBrowser, openingToRead):
     selected_text = get_selected_text() if textFromClipboard else text
     if selected_text is None:
         return []
+
     urls = find_urls_in_text(selected_text)
     processed_urls = []
 
+    threads = []
+    for url in urls:
+        thread = threading.Thread(
+            target=lambda u: processed_urls.append(
+                process_url(u, openInBrowser, openingToRead)
+            ),
+            args=(url,),
+        )
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    processed_urls = [url for url in processed_urls if url]
+
     if openInBrowser:
-        threads = []
-        for url in urls:
-            thread = threading.Thread(
-                target=lambda: process_url(url, openInBrowser, openingToRead)
-            )
-            threads.append(thread)
-            thread.start()
-        for thread in threads:
-            thread.join()
-    else:
-        for url in urls:
-            processed_url = process_url(url, openInBrowser, openingToRead)
-            if process_url:
-                processed_urls.append(processed_url)
+        for url in processed_urls:
+            open_in_browser(url)
+
     return processed_urls
 
 
