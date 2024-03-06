@@ -56,6 +56,8 @@ def download_youtube_video_as_mp3(url, max_size_mb):
         chunk.export(chunk_file, format="mp3")
         file_paths.append(chunk_file)
 
+    os.remove(mp3_file)
+
     return file_paths, title
 
 
