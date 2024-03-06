@@ -3,8 +3,9 @@ import subprocess
 import json
 import threading
 from os import path
-import sys
 import convertDiscord
+import convertTelegram
+import convertGitbook
 import traceback
 
 
@@ -39,61 +40,140 @@ def find_urls_in_text(text):
     url_pattern = re.compile(
         r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
     )
-    return url_pattern.findall(text)
+    return [url.strip(")") for url in url_pattern.findall(text)]
 
 
 def open_in_browser(url):
     subprocess.run(["xdg-open", url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
-def convert_youtube(url, openInBrowser):
+def convert_youtube(url, openingToRead):
     return url
 
 
-def convert_rumble(url, openInBrowser):
+def convert_rumble(url, openingToRead):
     return url
 
 
-def convert_invidious(url, openInBrowser):
+def convert_podcast(url, openingToRead):
     return url
 
 
-def convert_docs(url, openInBrowser):
+def convert_twitter(url, openingToRead):
+    if not openingToRead:
+        return url
     return url
 
 
-def convert_discord(url, openInBrowser):
+def convert_farcaster(url, openingToRead):
+    if not openingToRead:
+        return url
+    return url
+
+
+def convert_gitbook(url, openingToRead):
+    if "docs.google.com" in url:
+        return url
+    return convertGitbook.main(url)
+
+
+def convert_telegram(url, openingToRead):
+    if not openingToRead:
+        return url
+    return convertTelegram.main(url)
+
+
+def convert_discord(url, openingToRead):
+    if not openingToRead:
+        return url
     return convertDiscord.main(url)
 
 
-def convert_twitter(url, openInBrowser):
+def convert_gdoc(url, openingToRead):
+    if not openingToRead:
+        return url
+
+    # Split the URL into parts
+    url_parts = url.split("/")
+
+    # Check if the URL contains "/edit"
+    if "edit" in url_parts:
+        # Find the index of "/edit"
+        edit_index = url_parts.index("edit")
+
+        # Slice the URL parts up to "/edit" (exclusive)
+        modified_url_parts = url_parts[:edit_index]
+
+        # Append "/export?format=txt" to the modified URL parts
+        modified_url_parts.append("export?format=txt")
+
+        # Join the modified URL parts back into a string
+        modified_url = "/".join(modified_url_parts)
+
+        return modified_url
+
+    # If "/edit" is not found, return the original URL
     return url
 
 
-def convert_farcaster(url, openInBrowser):
+def convert_wikipedia(url, openingToRead):
+    url = url.replace("en.m.wikipedia.org", "en.wikipedia.org").strip()
     return url
+
+
+def convert_reddit(url, openingToRead):
+    url = url.replace("reddit.com", "old.reddit.com").strip()
+    return url
+
+
+def convert_medium(url, openingToRead):
+    if "-" in url:
+        if len(url.split("-")[-1]) == 12:
+            url = url.replace("medium.com", "scribe.rip").strip()
+    return url
+
+
+def convert_discourse(url, openingToRead):
+    if not url:
+        return ""
+    tempUrl = str(url)
+    if tempUrl[-1] != "/":
+        tempUrl += "/"
+    if re.search(r"(\/t\/[^\/]*\/\d+\/)", tempUrl):
+        if re.search(r"(t\/[^\/]*\/\d+\/)$", tempUrl):
+            tempUrl += "print"
+        if re.search(r"(t\/[^\/]*\/\d+\/)(([a-z]+|\d+)\/)$", tempUrl):
+            tempUrl = re.sub(
+                r"(t\/[^\/]*\/\d+\/)(([a-z]+|\d+)\/)$", r"\1print", tempUrl
+            )
+    else:
+        tempUrl = str(url)
+    return tempUrl
 
 
 conversion_functions = {
-    "youtube.com": convert_youtube,
+    "/watch?v=": convert_youtube,
     "rumble.com": convert_rumble,
-    "invidio.us": convert_invidious,
-    "docs.": convert_docs,
+    "docs.": convert_gitbook,
     "discord.com": convert_discord,
     "twitter.com": convert_twitter,
-    "farcaster.com": convert_farcaster,
+    "warpcast.com": convert_farcaster,
+    "docs.google.com/document/": convert_gdoc,
+    "m.wikipedia.org": convert_wikipedia,
+    "reddit.com": convert_reddit,
+    "medium.com": convert_medium,
+    "https://t.me/c/": convert_telegram,
+    "podcasts.apple.com": convert_podcast,
+    "": convert_discourse,
 }
 
 
-def process_url(url, is_main):
+def process_url(url, openInBrowser, openingToRead):
     try:
         for key, func in conversion_functions.items():
             if key in url:
-                converted_url = func(url, is_main)
-                if is_main:
-                    open_in_browser(converted_url)
-                return converted_url
-        if is_main:
+                url = func(url, openingToRead)
+        if openInBrowser:
             open_in_browser(url)
         return url
     except Exception as e:
@@ -102,10 +182,9 @@ def process_url(url, is_main):
         subprocess.run(["notify-send", "URL Processing Error", f"Error: {url}"])
 
 
-def main(text, openInBrowser):
+def main(text, openInBrowser, openingToRead):
     textFromClipboard = not bool(text)
     selected_text = get_selected_text() if textFromClipboard else text
-    print(selected_text)
     if selected_text is None:
         return []
     urls = find_urls_in_text(selected_text)
@@ -114,17 +193,19 @@ def main(text, openInBrowser):
     if openInBrowser:
         threads = []
         for url in urls:
-            thread = threading.Thread(target=lambda: process_url(url, openInBrowser))
+            thread = threading.Thread(
+                target=lambda: process_url(url, openInBrowser, openingToRead)
+            )
             threads.append(thread)
             thread.start()
         for thread in threads:
             thread.join()
     else:
         for url in urls:
-            processed_url = process_url(url, openInBrowser)
+            processed_url = process_url(url, openInBrowser, openingToRead)
             processed_urls.append(processed_url)
     return processed_urls
 
 
 if __name__ == "__main__":
-    main(None, openInBrowser=True)
+    main(None, openInBrowser=True, openingToRead=False)
