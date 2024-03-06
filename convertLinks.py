@@ -8,6 +8,7 @@ import convertTelegram
 import convertYoutube
 import convertPodcast
 import convertGitbook
+import convertSoundcloud
 import traceback
 
 
@@ -60,6 +61,10 @@ def convert_rumble(url, openingToRead):
         return url
 
     return url
+
+
+def convert_soundcloud(url, openingToRead):
+    return convertSoundcloud.main(url)
 
 
 def convert_podcast(url, openingToRead):
@@ -179,6 +184,7 @@ conversion_functions = {
     "podcasts.apple.com": convert_podcast,
     "": convert_discourse,
     "lesswrong.com": convert_lesswrong,
+    "soundcloud.com": convert_soundcloud,
 }
 
 

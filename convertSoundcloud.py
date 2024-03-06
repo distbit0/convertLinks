@@ -8,42 +8,21 @@ import os
 from dotenv import load_dotenv
 from math import ceil
 from openai import OpenAI
-import requests
-import re
-import json
-from html import unescape
+from sclib import SoundcloudAPI, Track, Playlist
 
 load_dotenv()
 
 
-def get_podcast_episode_info(url):
-    # Send a GET request to the podcast episode URL
-    response = requests.get(url)
-    response.raise_for_status()
-
-    # Find the script tag containing the JSON data
-    script_pattern = re.compile(
-        r'<script type="fastboot/shoebox" id="shoebox-media-api-cache-amp-podcasts">(.*?)</script>',
-        re.DOTALL,
-    )
-    script_match = script_pattern.search(response.text)
-    if script_match:
-        script_content = script_match.group(1)
-        script_content = unescape(script_content)
-        json_data = json.loads(script_content, strict=False)
-
-        # Locate the element in the JSON data containing the asset URL
-        for key in json_data:
-            if "podcast-episode" in key:
-                newJson = json.loads(unescape(json_data[key]))
-                decoded_url = newJson["d"][0]["attributes"]["assetUrl"]
-                title = newJson["d"][0]["attributes"]["name"]
-                return decoded_url, title
-
-    return None, None
-
-
 def download_podcast_episode(url, max_size_mb):
+    api = SoundcloudAPI()
+    track = api.resolve(url)
+    durationSeconds = track.full_duration / 1000
+    if durationSeconds < 600:
+        return None, None
+
+    if not isinstance(track, Track):
+        return None, None
+
     # Set the output directory relative to the script's location
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, "tmp")
@@ -52,17 +31,10 @@ def download_podcast_episode(url, max_size_mb):
     currentTime = time.time()
     randomNumber = str(currentTime) + "_" + str(random.randint(1000000000, 9999999999))
 
-    # Get the episode info
-    audio_url, title = get_podcast_episode_info(url)
-
-    # Download the podcast episode
-    response = requests.get(audio_url, allow_redirects=True)
-    response.raise_for_status()
-
     # Save the episode audio to a file
     mp3_file = os.path.join(output_dir, f"{randomNumber}.mp3")
-    with open(mp3_file, "wb") as file:
-        file.write(response.content)
+    with open(mp3_file, "wb+") as file:
+        track.write_mp3_to(file)
 
     # Load the MP3 file using pydub
     audio = AudioSegment.from_mp3(mp3_file)
@@ -85,17 +57,17 @@ def download_podcast_episode(url, max_size_mb):
 
     os.remove(mp3_file)
 
-    return file_paths, title
+    return file_paths, track.title
 
 
 def main(episode_url):
-    podcastId = episode_url.split("/")[-1].split("?")[0]
-    episodeId = episode_url.split("?i=")[-1]
-    episodeId = podcastId + "_" + episodeId
+    episodeId = episode_url.split("/")[-1]
     gistUrl = utilities.getGistUrl(episodeId)
     if gistUrl:
         return gistUrl
     audio_chunks, title = download_podcast_episode(episode_url, 0.8)
+    if not audio_chunks:
+        return None
     client = OpenAI()
     markdown_transcript = f"[Original Podcast Episode]({episode_url})\n\n"
     for i, chunk_filename in enumerate(audio_chunks):
