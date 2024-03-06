@@ -50,10 +50,10 @@ def open_in_browser(url):
 
 def convert_youtube(url, openingToRead):
     videoId = url.split("v=")[-1]
-    # if openingToRead:
-    videoUrl = f"https://www.youtube.com/watch?v={videoId}"
-    print(videoUrl)
-    return convertYoutube.main(videoUrl)
+    if openingToRead:
+        videoUrl = f"https://www.youtube.com/watch?v={videoId}"
+        print(videoUrl)
+        return convertYoutube.main(videoUrl)
     newUrl = "https://invidious.perennialte.ch/watch?v=" + videoId
     return newUrl
 
