@@ -5,6 +5,15 @@ import utilities
 
 
 def main(url):
+    # Generate a unique URL for the Gist
+    unique_url = url.lower()
+    unique_url = re.sub(r"#.*", "", unique_url)  # Remove #comments from the URL
+    unique_url = re.sub(r"[^a-z0-9]", "_", unique_url).strip("_")
+    unique_url = re.sub(r"_+", "_", unique_url)
+
+    gistUrl = utilities.getGistUrl(unique_url)
+    if gistUrl:
+        return gistUrl
     response = requests.get(url)
     if not response.ok:
         return False
@@ -12,12 +21,6 @@ def main(url):
 
     # Convert HTML to Markdown using html2text
     markdown_content = html2text.html2text(html_content)
-
-    # Generate a unique URL for the Gist
-    unique_url = url.lower()
-    unique_url = re.sub(r"#.*", "", unique_url)  # Remove #comments from the URL
-    unique_url = re.sub(r"[^a-z0-9]", "_", unique_url).strip("_")
-    unique_url = re.sub(r"_+", "_", unique_url)
 
     # Extract the title from the Markdown content
     title = ""
