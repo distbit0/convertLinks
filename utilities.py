@@ -44,7 +44,7 @@ def writeGist(text, name, guid=None, gist_id=None, update=True):
 def deleteMp3sOlderThan(seconds, output_dir):
     files = os.listdir(output_dir)
     for file in files:
-        if file.split(".")[-1] in ["mp3", "webm", "part"]:
+        if file.split(".")[-1] in ["mp3", "webm", "part", "mp4"]:
             filePath = os.path.join(output_dir, file)
             fileAge = time.time() - int(filePath.split("/")[-1].split(".")[0])
             if fileAge > seconds:

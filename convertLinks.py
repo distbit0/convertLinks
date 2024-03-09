@@ -10,6 +10,8 @@ import convertPodcast
 import convertGitbook
 import convertSoundcloud
 import traceback
+import convertMp4
+import convertStreameth
 
 
 def get_selected_text():
@@ -51,81 +53,86 @@ def open_in_browser(url):
 
 
 def convert_youtube(url, openingToRead):
-    videoId = url.split("v=")[-1]
-    videoUrl = f"https://www.youtube.com/watch?v={videoId}"
-    return convertYoutube.main(videoUrl)
+    returnUrls = []
+    if not openingToRead:
+        returnUrls.append(url)
+    else:
+        videoId = url.split("v=")[-1]
+        videoUrl = f"https://www.youtube.com/watch?v={videoId}"
+        returnUrls.append(convertYoutube.main(videoUrl))
+    return returnUrls
 
 
 def convert_rumble(url, openingToRead):
-    if openingToRead:
-        return url
-
-    return url
+    returnUrls = []
+    returnUrls.append(url)
+    return returnUrls
 
 
 def convert_soundcloud(url, openingToRead):
-    return convertSoundcloud.main(url)
+    returnUrls = []
+    returnUrls.append(convertSoundcloud.main(url))
+    return returnUrls
 
 
 def convert_podcast(url, openingToRead):
-    return convertPodcast.main(url)
+    returnUrls = []
+    returnUrls.append(convertPodcast.main(url))
+    return returnUrls
 
 
 def convert_twitter(url, openingToRead):
-    if not openingToRead:
-        return url
-    return url
+    returnUrls = []
+    returnUrls.append(url)
+    return returnUrls
 
 
 def convert_farcaster(url, openingToRead):
-    if not openingToRead:
-        return url
-    return url
+    returnUrls = []
+    returnUrls.append(url)
+    return returnUrls
 
 
 def convert_gitbook(url, openingToRead):
+    returnUrls = []
     if "docs.google.com" in url:
-        return url
-    return convertGitbook.main(url)
+        returnUrls.append(url)
+    else:
+        returnUrls.append(convertGitbook.main(url))
+    return returnUrls
 
 
 def convert_telegram(url, openingToRead):
-    if not openingToRead:
-        return url
-    return url  # convertTelegram.main(url)
+    returnUrls = []
+    if openingToRead:
+        returnUrls.append(convertTelegram.main(url))
+    else:
+        returnUrls.append(url)
+    return returnUrls
 
 
 def convert_discord(url, openingToRead):
-    if not openingToRead:
-        return url
-    return convertDiscord.main(url)
+    returnUrls = []
+    if openingToRead:
+        returnUrls.append(convertDiscord.main(url))
+    else:
+        returnUrls.append(url)
+    return returnUrls
 
 
 def convert_gdoc(url, openingToRead):
     if not openingToRead:
         return url
-
-    # Split the URL into parts
-    url_parts = url.split("/")
-
-    # Check if the URL contains "/edit"
-    if "edit" in url_parts:
-        # Find the index of "/edit"
-        edit_index = url_parts.index("edit")
-
-        # Slice the URL parts up to "/edit" (exclusive)
-        modified_url_parts = url_parts[:edit_index]
-
-        # Append "/export?format=txt" to the modified URL parts
-        modified_url_parts.append("export?format=txt")
-
-        # Join the modified URL parts back into a string
-        modified_url = "/".join(modified_url_parts)
-
-        return modified_url
-
-    # If "/edit" is not found, return the original URL
-    return url
+    else:
+        url_parts = url.split("/")
+        if "edit" in url_parts:
+            edit_index = url_parts.index("edit")
+            modified_url_parts = url_parts[:edit_index]
+            modified_url_parts.append("export?format=txt")
+            modified_url = "/".join(modified_url_parts)
+            return modified_url
+        else:
+            return url
 
 
 def convert_wikipedia(url, openingToRead):
@@ -168,6 +175,19 @@ def convert_lesswrong(url, openingToRead):
     return url
 
 
+def convert_mp4(url, openingToRead):
+    return convertMp4.main(url)
+
+
+def convert_streameth(url, openingToRead):
+    returnUrls = []
+    if openingToRead:
+        returnUrls.append(convertStreameth.main(url))
+    else:
+        returnUrls.append(url)
+    return returnUrls
+
+
 conversion_functions = {
     "watch?v=": convert_youtube,
     "rumble.com": convert_rumble,
@@ -185,6 +205,8 @@ conversion_functions = {
     "": convert_discourse,
     "lesswrong.com": convert_lesswrong,
     "soundcloud.com": convert_soundcloud,
+    ".mp4": convert_mp4,
+    "streameth.org": convert_streameth,
 }
 
 
@@ -219,6 +241,8 @@ def main(text, openInBrowser, openingToRead):
         return []
 
     urls = find_urls_in_text(selected_text)
+    if len(urls) > 1:
+        openingToRead = True  # the fact that multiple are being opened is an indication that the intent may be to open them in @voice
     processed_urls = []
 
     threads = []

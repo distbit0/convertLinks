@@ -1,7 +1,6 @@
 import time
 from pydub import AudioSegment
 import re
-import json
 import random
 import utilities
 import os
@@ -9,39 +8,11 @@ from dotenv import load_dotenv
 from math import ceil
 from openai import OpenAI
 import requests
-from html import unescape
 
 load_dotenv()
 
 
-def get_podcast_episode_info(url):
-    # Send a GET request to the podcast episode URL
-    response = requests.get(url)
-    response.raise_for_status()
-
-    # Find the script tag containing the JSON data
-    script_pattern = re.compile(
-        r'<script type="fastboot/shoebox" id="shoebox-media-api-cache-amp-podcasts">(.*?)</script>',
-        re.DOTALL,
-    )
-    script_match = script_pattern.search(response.text)
-    if script_match:
-        script_content = script_match.group(1)
-        script_content = unescape(script_content)
-        json_data = json.loads(script_content, strict=False)
-
-        # Locate the element in the JSON data containing the asset URL
-        for key in json_data:
-            if "podcast-episode" in key:
-                newJson = json.loads(unescape(json_data[key]))
-                decoded_url = newJson["d"][0]["attributes"]["assetUrl"]
-                title = newJson["d"][0]["attributes"]["name"]
-                return decoded_url, title
-
-    return None, None
-
-
-def download_podcast_episode(url, max_size_mb):
+def download_mp4_and_convert_to_mp3(url, max_size_mb):
     # Set the output directory relative to the script's location
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, "tmp")
@@ -50,17 +21,19 @@ def download_podcast_episode(url, max_size_mb):
     currentTime = time.time()
     randomNumber = str(currentTime) + "_" + str(random.randint(1000000000, 9999999999))
 
-    # Get the episode info
-    audio_url, title = get_podcast_episode_info(url)
-
-    # Download the podcast episode
-    response = requests.get(audio_url, allow_redirects=True)
+    # Download the MP4 file
+    response = requests.get(url, allow_redirects=True)
     response.raise_for_status()
 
-    # Save the episode audio to a file
-    mp3_file = os.path.join(output_dir, f"{randomNumber}.mp3")
-    with open(mp3_file, "wb") as file:
+    # Save the MP4 file
+    mp4_file = os.path.join(output_dir, f"{randomNumber}.mp4")
+    with open(mp4_file, "wb") as file:
         file.write(response.content)
+
+    # Convert MP4 to MP3 using pydub
+    audio = AudioSegment.from_file(mp4_file, format="mp4")
+    mp3_file = os.path.join(output_dir, f"{randomNumber}.mp3")
+    audio.export(mp3_file, format="mp3")
 
     # Load the MP3 file using pydub
     audio = AudioSegment.from_mp3(mp3_file)
@@ -82,20 +55,22 @@ def download_podcast_episode(url, max_size_mb):
         file_paths.append(chunk_file)
 
     os.remove(mp3_file)
+    os.remove(mp4_file)
 
-    return file_paths, title
+    return file_paths
 
 
-def main(episode_url):
-    podcastId = episode_url.split("/")[-1].split("?")[0]
-    episodeId = episode_url.split("?i=")[-1]
-    episodeId = podcastId + "_" + episodeId
-    gistUrl = utilities.getGistUrl(episodeId)
+def main(mp4_url):
+    mp4Id = "".join(char for char in mp4_url if char.isalnum())
+    domain = mp4_url.split("/")[2:3][0]
+    fileName = mp4Id.split("/")[-1].split(".")[0]
+    name = domain + "_" + fileName
+    gistUrl = utilities.getGistUrl(mp4Id)
     if gistUrl:
         return gistUrl
-    audio_chunks, title = download_podcast_episode(episode_url, 0.8)
+    audio_chunks = download_mp4_and_convert_to_mp3(mp4_url, 0.8)
     client = OpenAI()
-    markdown_transcript = f"[Original Podcast Episode]({episode_url})\n\n"
+    markdown_transcript = f"[Original MP4 File]({mp4_url})\n\n"
     for i, chunk_filename in enumerate(audio_chunks):
         print("downloading chunk ", i + 1, "of", len(audio_chunks))
         with open(chunk_filename, "rb") as audio_file:
@@ -105,11 +80,9 @@ def main(episode_url):
                 language="en",
                 response_format="text",
                 prompt=(
-                    "Title: "
-                    + title
-                    + " Continuation of podcast episode (might begin mid-sentence): "
+                    "Continuation of audio (might begin mid-sentence): "
                     if i > 0
-                    else "Welcome to the podcast episode. "
+                    else "Welcome to this technical episode. "
                 ),
             )
 
@@ -120,9 +93,7 @@ def main(episode_url):
     )
 
     # Save the Markdown content to a Gist
-    gist_url = utilities.writeGist(
-        markdown_transcript, "Podcast: " + title, episodeId, update=True
-    )
+    gist_url = utilities.writeGist(markdown_transcript, name, mp4Id, update=True)
 
     # Delete all the temporary mp3 files
     for file in audio_chunks:
