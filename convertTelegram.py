@@ -77,7 +77,7 @@ async def primary(url, client):
         await client.get_dialogs()
         all_messages = await fetch_messages(chat_id, message_id, client)
         html, firstMsg = createHtmlFromMessages(all_messages, url)
-        urlToOpen = utilities.writeGist(html, "TELE: " + firstMsg, str(message_id))
+        urlToOpen = utilities.writeGist(html, "TG: " + firstMsg, str(message_id))
         return urlToOpen
     else:
         return url

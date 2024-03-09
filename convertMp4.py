@@ -93,7 +93,9 @@ def main(mp4_url):
     )
 
     # Save the Markdown content to a Gist
-    gist_url = utilities.writeGist(markdown_transcript, name, mp4Id, update=True)
+    gist_url = utilities.writeGist(
+        markdown_transcript, "MP4: " + name, mp4Id, update=True
+    )
 
     # Delete all the temporary mp3 files
     for file in audio_chunks:

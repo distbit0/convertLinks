@@ -121,7 +121,7 @@ def main(episode_url):
 
     # Save the Markdown content to a Gist
     gist_url = utilities.writeGist(
-        markdown_transcript, "Podcast: " + title, episodeId, update=True
+        markdown_transcript, "Pod: " + title, episodeId, update=True
     )
 
     # Delete all the temporary mp3 files

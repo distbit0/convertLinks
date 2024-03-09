@@ -111,7 +111,9 @@ def main(streamethUrl):
     )
 
     # Save the Markdown content to a Gist
-    gist_url = utilities.writeGist(markdown_transcript, name, id, update=True)
+    gist_url = utilities.writeGist(
+        markdown_transcript, "StreamETH: " + name, id, update=True
+    )
 
     # Delete all the temporary mp3 files
     for file in audio_chunks:
