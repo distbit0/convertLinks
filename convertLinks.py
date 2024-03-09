@@ -48,93 +48,36 @@ def find_urls_in_text(text):
     return [url.strip(")") for url in url_pattern.findall(text)]
 
 
-def open_in_browser(url):
-    subprocess.run(["xdg-open", url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-
-def convert_youtube(url, openingToRead):
-    if not openingToRead:
-        return url
-    else:
-        videoId = url.split("v=")[-1]
-        videoUrl = f"https://www.youtube.com/watch?v={videoId}"
-        return convertYoutube.main(videoUrl)
-
-
-def convert_rumble(url, openingToRead):
-    return url
-
-
-def convert_soundcloud(url, openingToRead):
-    return convertSoundcloud.main(url)
-
-
-def convert_podcast(url, openingToRead):
-    return convertPodcast.main(url)
-
-
-def convert_twitter(url, openingToRead):
-    return url
-
-
-def convert_farcaster(url, openingToRead):
-    return url
-
-
-def convert_gitbook(url, openingToRead):
-    if "docs.google.com" in url:
-        return url
-    else:
-        return convertGitbook.main(url)
-
-
-def convert_telegram(url, openingToRead):
-    if openingToRead:
-        return convertTelegram.main(url)
+def convertGDocs(url):
+    url_parts = url.split("/")
+    if "edit" in url_parts:
+        edit_index = url_parts.index("edit")
+        modified_url_parts = url_parts[:edit_index]
+        modified_url_parts.append("export?format=txt")
+        modified_url = "/".join(modified_url_parts)
+        return modified_url
     else:
         return url
 
 
-def convert_discord(url, openingToRead):
-    if openingToRead:
-        return convertDiscord.main(url)
-    else:
-        return url
-
-
-def convert_gdoc(url, openingToRead):
-    if not openingToRead:
-        return url
-    else:
-        url_parts = url.split("/")
-        if "edit" in url_parts:
-            edit_index = url_parts.index("edit")
-            modified_url_parts = url_parts[:edit_index]
-            modified_url_parts.append("export?format=txt")
-            modified_url = "/".join(modified_url_parts)
-            return modified_url
-        else:
-            return url
-
-
-def convert_wikipedia(url, openingToRead):
+def convertWikipedia(url):
     url = url.replace("en.m.wikipedia.org", "en.wikipedia.org").strip()
     return url
 
 
-def convert_reddit(url, openingToRead):
-    url = url.replace("reddit.com", "old.reddit.com").strip()
+def convertReddit(url):
+    url = url.replace("https://www.reddit.com", "https://old.reddit.com").strip()
     return url
 
 
-def convert_medium(url, openingToRead):
+def convertMedium(url):
     if "-" in url:
         if len(url.split("-")[-1]) == 12:
             url = url.replace("medium.com", "scribe.rip").strip()
     return url
 
 
-def convert_discourse(url, openingToRead):
+def convertDiscourse(url):
     tempUrl = str(url)
     if tempUrl[-1] != "/":
         tempUrl += "/"
@@ -150,53 +93,53 @@ def convert_discourse(url, openingToRead):
     return tempUrl
 
 
-def convert_lesswrong(url, openingToRead):
+def convertLesswrong(url):
     url = url.replace("lesswrong.com", "greaterwrong.com").strip()
     return url
 
 
-def convert_mp4(url, openingToRead):
-    if openingToRead:
-        return convertMp4.main(url)
-    else:
-        return url
+def returnUnchanged(url):
+    return url
 
 
-def convert_streameth(url, openingToRead):
-    if openingToRead:
-        return convertStreameth.main(url)
-    else:
-        return url
+def open_in_browser(url):
+    subprocess.run(["xdg-open", url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 conversion_functions = {
-    "watch?v=": convert_youtube,
-    "rumble.com": convert_rumble,
-    "docs.": convert_gitbook,
-    "gitbook": convert_gitbook,
-    "discord.com": convert_discord,
-    "twitter.com": convert_twitter,
-    "warpcast.com": convert_farcaster,
-    "docs.google.com/document/": convert_gdoc,
-    "m.wikipedia.org": convert_wikipedia,
-    "reddit.com": convert_reddit,
-    "medium.com": convert_medium,
-    "https://t.me/c/": convert_telegram,
-    "podcasts.apple.com": convert_podcast,
-    "": convert_discourse,
-    "lesswrong.com": convert_lesswrong,
-    "soundcloud.com": convert_soundcloud,
-    ".mp4": convert_mp4,
-    "streameth.org": convert_streameth,
+    "watch?v=": {"function": convertYoutube.main, "alwaysConvert": False},
+    "docs.": {"function": convertGitbook.main, "alwaysConvert": True},
+    "twitter.com": {"function": returnUnchanged, "alwaysConvert": False},
+    "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},
+    "docs.google.com/document/": {
+        "function": convertGDocs,
+        "alwaysConvert": False,
+    },
+    "streameth.org": {"function": convertStreameth.main, "alwaysConvert": False},
+    "https://t.me/c/": {"function": convertTelegram.main, "alwaysConvert": False},
+    ".mp4": {"function": convertMp4.main, "alwaysConvert": False},
+    "discord.com": {"function": convertDiscord.main, "alwaysConvert": False},
+    "rumble.com": {"function": returnUnchanged, "alwaysConvert": True},
+    "gitbook": {"function": convertGitbook.main, "alwaysConvert": True},
+    "m.wikipedia.org": {"function": convertWikipedia, "alwaysConvert": True},
+    "reddit.com": {"function": convertReddit, "alwaysConvert": True},
+    "medium.com": {"function": convertMedium, "alwaysConvert": True},
+    "podcasts.apple.com": {"function": convertPodcast.main, "alwaysConvert": True},
+    "": {"function": convertDiscourse, "alwaysConvert": True},
+    "lesswrong.com": {"function": convertLesswrong, "alwaysConvert": True},
+    "soundcloud.com": {"function": convertSoundcloud.main, "alwaysConvert": True},
 }
 
 
 def process_url(originalUrl, openInBrowser, openingToRead):
     try:
         url = str(originalUrl)
-        for key, func in conversion_functions.items():
+        for key, value in conversion_functions.items():
             if key in url:
-                url = func(url, openingToRead)
+                func = value["function"]
+                alwaysConvert = value["alwaysConvert"]
+                if alwaysConvert or openingToRead:
+                    url = func(url)
     except Exception as e:
         print(e)
         traceback.print_exc()
