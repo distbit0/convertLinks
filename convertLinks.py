@@ -53,71 +53,53 @@ def open_in_browser(url):
 
 
 def convert_youtube(url, openingToRead):
-    returnUrls = []
     if not openingToRead:
-        returnUrls.append(url)
+        return url
     else:
         videoId = url.split("v=")[-1]
         videoUrl = f"https://www.youtube.com/watch?v={videoId}"
-        returnUrls.append(convertYoutube.main(videoUrl))
-    return returnUrls
+        return convertYoutube.main(videoUrl)
 
 
 def convert_rumble(url, openingToRead):
-    returnUrls = []
-    returnUrls.append(url)
-    return returnUrls
+    return url
 
 
 def convert_soundcloud(url, openingToRead):
-    returnUrls = []
-    returnUrls.append(convertSoundcloud.main(url))
-    return returnUrls
+    return convertSoundcloud.main(url)
 
 
 def convert_podcast(url, openingToRead):
-    returnUrls = []
-    returnUrls.append(convertPodcast.main(url))
-    return returnUrls
+    return convertPodcast.main(url)
 
 
 def convert_twitter(url, openingToRead):
-    returnUrls = []
-    returnUrls.append(url)
-    return returnUrls
+    return url
 
 
 def convert_farcaster(url, openingToRead):
-    returnUrls = []
-    returnUrls.append(url)
-    return returnUrls
+    return url
 
 
 def convert_gitbook(url, openingToRead):
-    returnUrls = []
     if "docs.google.com" in url:
-        returnUrls.append(url)
+        return url
     else:
-        returnUrls.append(convertGitbook.main(url))
-    return returnUrls
+        return convertGitbook.main(url)
 
 
 def convert_telegram(url, openingToRead):
-    returnUrls = []
     if openingToRead:
-        returnUrls.append(convertTelegram.main(url))
+        return convertTelegram.main(url)
     else:
-        returnUrls.append(url)
-    return returnUrls
+        return url
 
 
 def convert_discord(url, openingToRead):
-    returnUrls = []
     if openingToRead:
-        returnUrls.append(convertDiscord.main(url))
+        return convertDiscord.main(url)
     else:
-        returnUrls.append(url)
-    return returnUrls
+        return url
 
 
 def convert_gdoc(url, openingToRead):
@@ -153,8 +135,6 @@ def convert_medium(url, openingToRead):
 
 
 def convert_discourse(url, openingToRead):
-    if not url:
-        return ""
     tempUrl = str(url)
     if tempUrl[-1] != "/":
         tempUrl += "/"
@@ -176,16 +156,17 @@ def convert_lesswrong(url, openingToRead):
 
 
 def convert_mp4(url, openingToRead):
-    return convertMp4.main(url)
+    if openingToRead:
+        return convertMp4.main(url)
+    else:
+        return url
 
 
 def convert_streameth(url, openingToRead):
-    returnUrls = []
     if openingToRead:
-        returnUrls.append(convertStreameth.main(url))
+        return convertStreameth.main(url)
     else:
-        returnUrls.append(url)
-    return returnUrls
+        return url
 
 
 conversion_functions = {
