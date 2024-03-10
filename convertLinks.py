@@ -11,6 +11,7 @@ import convertGitbook
 import convertSoundcloud
 import traceback
 import convertMp4
+import os
 import convertStreameth
 
 
@@ -42,6 +43,9 @@ def getConfig():
 
 # URL extraction and opening
 def find_urls_in_text(text):
+    isValidUnixPath = os.path.isdir(text) or os.path.isfile(text)
+    if isValidUnixPath:
+        return [text]
     url_pattern = re.compile(
         r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
     )
@@ -128,6 +132,7 @@ conversion_functions = {
     "": {"function": convertDiscourse, "alwaysConvert": True},
     "lesswrong.com": {"function": convertLesswrong, "alwaysConvert": True},
     "soundcloud.com": {"function": convertSoundcloud.main, "alwaysConvert": True},
+    "/home/pimania/ebooks/": {"function": convertGitbook.main, "alwaysConvert": True},
 }
 
 
@@ -135,7 +140,7 @@ def process_url(originalUrl, openInBrowser, openingToRead):
     try:
         url = str(originalUrl)
         for key, value in conversion_functions.items():
-            if key in url:
+            if url and key in url:
                 func = value["function"]
                 alwaysConvert = value["alwaysConvert"]
                 if alwaysConvert or openingToRead:

@@ -2,6 +2,8 @@ import re
 import requests
 import html2text
 import utilities
+from bs4 import BeautifulSoup
+import pysnooper
 
 
 def convert_markdown_images_to_absolute(markdown_text, base_url):
@@ -33,7 +35,7 @@ def convert_markdown_images_to_absolute(markdown_text, base_url):
 def removeNewLinesFromLinksAndImages(text):
     # Regular expression to match markdown links, capturing text and link separately
     # It's divided into optional image syntax '!', optional text part '[]', and link part '()'
-    markdown_link_pattern = r"(!)?\[((?:[^\[\]]|\n)*)\]\(((?:[^\(\)]|\n)*)\)"
+    markdown_link_pattern = r"(!)?\[([^\[\]]*)\]\(((?:[^()\n]|\n(?!\]))*)\)"
 
     def replace_newlines(match):
         # Replace single newlines within brackets '[]' and parentheses '()'
@@ -60,7 +62,42 @@ def getLastModifiedStringIndex(text):
     # string to find: Last modified * ago
     pattern = r"Last modified .*? ago"
     match = re.search(pattern, text)
-    return match.start() if match else -1
+    index = match.start() if match else -1
+    if index == -1:
+        pattern = r"Last updated on"
+        match = re.search(pattern, text)
+        index = match.start() if match else -1
+    if index == -1:
+        pattern = r"Last modified on"
+        match = re.search(pattern, text)
+        index = match.start() if match else -1
+
+    return index
+
+
+urlPatterns = [
+    "\\<\\!\\-\\- Hyperionics-OriginHtml(.*?)-->",
+    "\\<\\!\\-\\- Hyperionics-SimpleHtml (.*?)-->",
+    "Snapshot-Content-Location: (.*)\n",
+]
+
+
+def getUrlOfArticle(articleFilePath):
+    extractedUrl = ""
+    articleExtension = articleFilePath.split(".")[-1].lower()
+
+    if articleExtension not in ["txt", "html"]:
+        return ""
+
+    with open(articleFilePath, errors="ignore") as _file:
+        fileText = _file.read()
+        for urlPattern in urlPatterns:
+            match = re.search(urlPattern, fileText)
+            if match:
+                extractedUrl = match.group(1).strip()
+                break
+
+    return extractedUrl
 
 
 def main(url):
@@ -72,15 +109,32 @@ def main(url):
     unique_url = re.sub(r"[^a-z0-9]", "_", unique_url).strip("_")
     unique_url = re.sub(r"_+", "_", unique_url)
 
-    gistUrl = utilities.getGistUrl(unique_url)
-    if gistUrl:
-        return gistUrl
-    response = requests.get(url)
-    if not response.ok:
-        return False
-    html_content = response.text
+    # gistUrl = utilities.getGistUrl(unique_url)
+    # if gistUrl:
+    #     return gistUrl
+    if "home/pimania/ebooks" in url:
+        html_content = open(url).read()
+        url = getUrlOfArticle(url)
+    else:
+        issue = False
+        try:
+            response = requests.get(url)
+            if not response.ok:
+                issue = True
+            html_content = response.text
+        except Exception as e:
+            print("network error", e, url)
+            issue = True
+        if issue:
+            return False
 
-    title = re.search(r"<title.*?>(.*?)</title>", html_content).group(1)
+    soup = BeautifulSoup(html_content, "html.parser")
+    title_element = soup.find("title")
+
+    if title_element:
+        title = title_element.get_text()
+    else:
+        title = "".join(c if c.isalnum() else "_" for c in url)
 
     # Convert HTML to Markdown using html2text
     markdown_content = html2text.html2text(html_content)
