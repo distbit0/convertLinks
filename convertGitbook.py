@@ -128,11 +128,11 @@ def main(url):
     if lastModifiedIndex > 0:
         markdown_content = markdown_content[:lastModifiedIndex]
 
+    markdown_content = removeNewLinesFromLinksAndImages(markdown_content)
     domainOfUrl = "/".join(url.split("/")[:3])
     markdown_content = convert_markdown_images_to_absolute(
         markdown_content, domainOfUrl
     )
-    markdown_content = removeNewLinesFromLinksAndImages(markdown_content)
 
     # Add the original URL as a Markdown link at the top of the content
     markdown_content = f"[Link to original]({url})\n\n{markdown_content}"
