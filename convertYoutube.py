@@ -76,11 +76,9 @@ def download_youtube_video_as_mp3(url, max_size_mb):
 
 
 def main(video_url):
-    videoId = video_url.split("v=")[-1]
+    videoId = video_url.split("v=")[-1].split("&")[0]
     video_url = f"https://www.youtube.com/watch?v={videoId}"
-    youtubeId = video_url.split("v=")[-1].split("&")[0]
-    video_url = "https://www.youtube.com/watch?v=" + youtubeId
-    gistUrl = utilities.getGistUrl(youtubeId)
+    gistUrl = utilities.getGistUrl(videoId)
     if gistUrl:
         return gistUrl
     audio_chunks, title, videoScalingFactor = download_youtube_video_as_mp3(
@@ -144,7 +142,7 @@ def main(video_url):
 
     # Save the Markdown content to a Gist
     gist_url = utilities.writeGist(
-        markdown_transcript, "YT: " + title, youtubeId, update=True
+        markdown_transcript, "YT: " + title, videoId, update=True
     )
 
     # Delete all the temporary mp3 files

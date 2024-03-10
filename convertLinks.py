@@ -111,7 +111,7 @@ def open_in_browser(url):
 
 
 conversion_functions = {
-    "watch?v=": {"function": convertYoutube.main, "alwaysConvert": False},
+    "/watch?": {"function": convertYoutube.main, "alwaysConvert": False},
     "docs.": {"function": convertGitbook.main, "alwaysConvert": True},
     "twitter.com": {"function": returnUnchanged, "alwaysConvert": False},
     "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},

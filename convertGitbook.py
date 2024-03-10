@@ -141,5 +141,4 @@ def main(url):
     gist_url = utilities.writeGist(
         markdown_content, "GITB: " + title, unique_url, update=True
     )
-
     return gist_url
