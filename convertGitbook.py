@@ -92,9 +92,9 @@ def main(url):
     unique_url = re.sub(r"[^a-z0-9]", "_", unique_url).strip("_")
     unique_url = re.sub(r"_+", "_", unique_url)
 
-    # gistUrl = utilities.getGistUrl(unique_url)
-    # if gistUrl:
-    #     return gistUrl
+    gistUrl = utilities.getGistUrl(unique_url)
+    if gistUrl:
+        return gistUrl
     if "/home/pimania/ebooks" in url:
         html_content = open(url).read()
         url = getUrlOfArticle(url)
