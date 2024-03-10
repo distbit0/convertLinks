@@ -4,6 +4,10 @@ import html2text
 import utilities
 from bs4 import BeautifulSoup
 import pysnooper
+import sys
+
+sys.path.append("/home/pimania/dev/articleSearchAndSync/src")
+from utils import getUrlOfArticle
 
 
 def convert_markdown_images_to_absolute(markdown_text, base_url):
@@ -49,10 +53,7 @@ def removeNewLinesFromLinksAndImages(text):
 
 def find_first_sentence_position(text):
     # Regular expression pattern for a sentence
-    pattern = re.compile(
-        r"(?m)^(?:[A-Z])(?:[^/*\n]|(?:\n(?!\n)))*(?:[.!?](?=$|\s))"  # First sentence pattern
-        # r"(\b[A-Z](?:(?![*.\/])[^.?!])*[.?!])"  # Second sentence pattern
-    )
+    pattern = re.compile(r"(?m)^(?:[A-Z])(?:[^*\n]|(?:\n(?!\n)))*(?:[.!?](?=$|\s))")
 
     match = pattern.search(text)
     return match.start() if match else -1
@@ -82,24 +83,6 @@ urlPatterns = [
 ]
 
 
-def getUrlOfArticle(articleFilePath):
-    extractedUrl = ""
-    articleExtension = articleFilePath.split(".")[-1].lower()
-
-    if articleExtension not in ["txt", "html"]:
-        return ""
-
-    with open(articleFilePath, errors="ignore") as _file:
-        fileText = _file.read()
-        for urlPattern in urlPatterns:
-            match = re.search(urlPattern, fileText)
-            if match:
-                extractedUrl = match.group(1).strip()
-                break
-
-    return extractedUrl
-
-
 def main(url):
     if "docs.google.com" in url:
         return url
@@ -112,7 +95,7 @@ def main(url):
     # gistUrl = utilities.getGistUrl(unique_url)
     # if gistUrl:
     #     return gistUrl
-    if "home/pimania/ebooks" in url:
+    if "/home/pimania/ebooks" in url:
         html_content = open(url).read()
         url = getUrlOfArticle(url)
     else:
@@ -131,10 +114,7 @@ def main(url):
     soup = BeautifulSoup(html_content, "html.parser")
     title_element = soup.find("title")
 
-    if title_element:
-        title = title_element.get_text()
-    else:
-        title = "".join(c if c.isalnum() else "_" for c in url)
+    title = title_element.get_text() if title_element else unique_url
 
     # Convert HTML to Markdown using html2text
     markdown_content = html2text.html2text(html_content)
