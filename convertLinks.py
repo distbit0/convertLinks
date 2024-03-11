@@ -1,4 +1,5 @@
 import re
+import pysnooper
 import subprocess
 import json
 import threading
@@ -111,7 +112,7 @@ def open_in_browser(url):
 
 
 conversion_functions = {
-    "/watch?": {"function": convertYoutube.main, "alwaysConvert": False},
+    "/watch?": {"function": convertYoutube.main, "alwaysConvert": True},
     "docs.": {"function": convertGitbook.main, "alwaysConvert": True},
     "twitter.com": {"function": returnUnchanged, "alwaysConvert": False},
     "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},
@@ -136,6 +137,7 @@ conversion_functions = {
 }
 
 
+# @pysnooper.snoop()
 def process_url(originalUrl, openInBrowser, openingToRead):
     try:
         url = str(originalUrl)
@@ -163,6 +165,7 @@ def process_url(originalUrl, openInBrowser, openingToRead):
             return url
 
 
+# @pysnooper.snoop()
 def main(text, openInBrowser, openingToRead):
     textFromClipboard = not bool(text)
     selected_text = get_selected_text() if textFromClipboard else text

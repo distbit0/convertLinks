@@ -7,6 +7,7 @@ import utilities
 import os
 from dotenv import load_dotenv
 from math import ceil
+import pysnooper
 
 load_dotenv()
 
@@ -75,6 +76,7 @@ def download_youtube_video_as_mp3(url, max_size_mb):
     return file_paths, title, videoScalingFactor
 
 
+# @pysnooper.snoop()
 def main(video_url):
     videoId = video_url.split("v=")[-1].split("&")[0]
     video_url = f"https://www.youtube.com/watch?v={videoId}"
@@ -89,7 +91,6 @@ def main(video_url):
     sumOfPrevChunkDurations = 0
     for i, chunk_filename in enumerate(audio_chunks):
         grouped_segments = []
-        i = 0
         currentGroup = []
         print("downloading chunk ", i + 1, "of", len(audio_chunks))
         audio_file = open(chunk_filename, "rb")
@@ -108,12 +109,11 @@ def main(video_url):
             timestamp_granularities=["segment"],
             prompt=prompt,
         )
-        for segment in transcript.segments:
+        for j, segment in enumerate(transcript.segments):
             segment["start"] += sumOfPrevChunkDurations
             segment["start"] *= videoScalingFactor
             currentGroup.append(segment)
-            i += 1
-            if i % 6 == 0:
+            if j % 6 == 0:
                 startTime = currentGroup[0]["start"]
                 text = " ".join([segment["text"] for segment in currentGroup])
                 grouped_segments.append(
