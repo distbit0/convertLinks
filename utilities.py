@@ -24,12 +24,14 @@ from writeGist import writeContent, getGistUrl
 
 
 def writeGist(text, name, guid=None, gist_id=None, update=True):
+    deleteMp3sOlderThan(60 * 60 * 12, getAbsPath("tmp/"))
     if not update:
         gistUrl = getGistUrl(guid)
         if gistUrl:
             return gistUrl
+    unixTime = str(int(time.time()))
     randomNumber = str(random.randint(1000000000, 9999999999))
-    tmpFile = getAbsPath(f"tmp/gist_{randomNumber}.txt")
+    tmpFile = getAbsPath(f"tmp/{unixTime}.{randomNumber}.txt")
     with open(tmpFile, "w") as f:
         f.write(text)
     gistUrl = "https://gist.github.com/" + gist_id if gist_id else None
@@ -44,7 +46,7 @@ def writeGist(text, name, guid=None, gist_id=None, update=True):
 def deleteMp3sOlderThan(seconds, output_dir):
     files = os.listdir(output_dir)
     for file in files:
-        if file.split(".")[-1] in ["mp3", "webm", "part", "mp4"]:
+        if file.split(".")[-1] in ["mp3", "webm", "part", "mp4", "txt"]:
             filePath = os.path.join(output_dir, file)
             fileAge = time.time() - int(filePath.split("/")[-1].split(".")[0])
             if fileAge > seconds:
