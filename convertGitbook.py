@@ -55,29 +55,52 @@ def fixAndMakeLinksAndImagesAbsolute(markdown_text, base_url):
     return updated_markdown.strip("\n")
 
 
-def find_first_sentence_position(text):
+def find_first_sentence_position(originalText):
     # Regular expression pattern for a sentence
-    pattern = re.compile(r"(?m)^(?:[A-Z])(?:[^*\n]|(?:\n(?!\n)))*(?:[.!?](?=$|\s))")
+    # pattern = re.compile(r"(?m)^(?:[A-Z])(?:[^*\n]|(?:\n(?!\n)))*(?:[.!?](?=$|\s))") ###original, with ^ at start, which broke some sentences that started with a * before the first word. i.e. lists. maybe these could be explicitly handled
+    # print(text)
+    ### modify this function so that it returns an index two lines up from where the sentence is, so that it includes headings
+    outputIndex = -1
+    nextStartIndex = 0
+    pattern = re.compile(r"(?m)(?:[A-Z])(?:[^*\n]|(?:\n(?!\n)))*(?:[.!?](?=$|\s))")
+    while True:
+        text = originalText[nextStartIndex:]
+        match = pattern.search(text)
+        if match:
+            indexOfMatch = match.start()
+            textLines = text[match.end() :].split("\n")
+            nextTenLines = "\n".join(textLines[:10])
+            isAlsoSentenceInNextTenLines = pattern.search(nextTenLines)
+            if isAlsoSentenceInNextTenLines != None:
+                outputIndex = indexOfMatch + nextStartIndex
+                break
+            else:
+                nextStartIndex += match.end()
+        else:
+            break
 
-    match = pattern.search(text)
-    return match.start() if match else -1
+    return outputIndex
 
 
 def getLastModifiedStringIndex(text):
     endStrings = [
+        r"\[Previous.*?\[Next",
+        r"\[PREVIOUS.*?\[NEXT",
         r"Last updated on",
         r"Last modified on",
         r"Last modified: .*? ago",
+        r"Last modified .*? ago",
         r"Last updated",
+        r"Last Updated:",
         r"Last update:",
-        r"Edit this page",
         r"Updated .*? ago",
+        r"\[Edit this page",
         r"Edit this page",
         r"Did this page help you",
-        r"Previous[^\s]+Next",
+        r"^Updated\s+\d{2}\s+\w{3}\s+\d{4}$",
     ]
     for string in endStrings:
-        match = re.search(f"{string}", text)
+        match = re.search(string, text, re.DOTALL)
         if match:
             return match.start()
     return -1
@@ -123,6 +146,9 @@ def main(url):
     firstSentenceIndex = find_first_sentence_position(markdown_content)
     if firstSentenceIndex > 0:
         markdown_content = markdown_content[firstSentenceIndex:]
+    else:
+        print("could not find first sentence")
+        return False
 
     lastModifiedIndex = getLastModifiedStringIndex(markdown_content)
     if lastModifiedIndex > 0:
