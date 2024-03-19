@@ -58,23 +58,32 @@ def fixAndMakeLinksAndImagesAbsolute(markdown_text, base_url):
 def find_first_sentence_position(originalText):
     # Regular expression pattern for a sentence
     # pattern = re.compile(r"(?m)^(?:[A-Z])(?:[^*\n]|(?:\n(?!\n)))*(?:[.!?](?=$|\s))") ###original, with ^ at start, which broke some sentences that started with a * before the first word. i.e. lists. maybe these could be explicitly handled
-    # print(text)
+    print(originalText)
     ### modify this function so that it returns an index two lines up from where the sentence is, so that it includes headings
     outputIndex = -1
     nextStartIndex = 0
-    pattern = re.compile(r"(?m)(?:[A-Z])(?:[^*\n]|(?:\n(?!\n)))*(?:[.!?](?=$|\s))")
+    pattern = re.compile(r"(?m)(?:[A-Z])(?:[^*\n]|(?:\n(?!\n)))*(?:[.!?:](?=$|\s))")
     while True:
         text = originalText[nextStartIndex:]
         match = pattern.search(text)
         if match:
+            hasMoreThanNSpaces = text[match.start() : match.end()].count(" ") >= 4
             indexOfMatch = match.start()
-            textLines = text[match.end() :].split("\n")
-            nextTenLines = "\n".join(textLines[:10])
-            isAlsoSentenceInNextTenLines = pattern.search(nextTenLines)
-            if isAlsoSentenceInNextTenLines != None:
+            compressedText = "\n".join(
+                [line for line in text.split("\n") if line.strip(" #").strip()]
+            )
+            nextNLines = "\n".join(compressedText[match.end() :].split("\n")[:11])
+            isAlsoSentenceInNextNLines = pattern.search(nextNLines)
+            # print(nextTenLines + "\n\n\n\n")
+            if isAlsoSentenceInNextNLines != None and hasMoreThanNSpaces:
                 outputIndex = indexOfMatch + nextStartIndex
                 break
             else:
+                print(
+                    "skipping because: ",
+                    isAlsoSentenceInNextNLines,
+                    hasMoreThanNSpaces,
+                )
                 nextStartIndex += match.end()
         else:
             break
@@ -117,9 +126,9 @@ def main(url):
     if "docs.google.com" in url:
         return url
     unique_url = getUniqueUrl(url)
-    gistUrl = utilities.getGistUrl(unique_url)
-    if gistUrl:
-        return gistUrl
+    # gistUrl = utilities.getGistUrl(unique_url)
+    # if gistUrl:
+    #     return gistUrl
     if "/home/pimania/ebooks" in url:
         html_content = open(url).read()
         url = getUrlOfArticle(url)
