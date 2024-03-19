@@ -70,9 +70,13 @@ def find_first_sentence_position(originalText):
             hasMoreThanNSpaces = text[match.start() : match.end()].count(" ") >= 4
             indexOfMatch = match.start()
             compressedText = "\n".join(
-                [line for line in text.split("\n") if line.strip(" #").strip()]
+                [
+                    line
+                    for line in text[match.end() :].split("\n")
+                    if line.strip(" #").strip()
+                ]
             )
-            nextNLines = "\n".join(compressedText[match.end() :].split("\n")[:11])
+            nextNLines = "\n".join(compressedText.split("\n")[:11])
             isAlsoSentenceInNextNLines = pattern.search(nextNLines)
             # print(nextTenLines + "\n\n\n\n")
             if isAlsoSentenceInNextNLines != None and hasMoreThanNSpaces:
