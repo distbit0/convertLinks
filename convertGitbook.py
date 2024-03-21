@@ -58,7 +58,7 @@ def fixAndMakeLinksAndImagesAbsolute(markdown_text, base_url):
 def find_first_sentence_position(originalText):
     # Regular expression pattern for a sentence
     # pattern = re.compile(r"(?m)^(?:[A-Z])(?:[^*\n]|(?:\n(?!\n)))*(?:[.!?](?=$|\s))") ###original, with ^ at start, which broke some sentences that started with a * before the first word. i.e. lists. maybe these could be explicitly handled
-    print(originalText)
+    # print(originalText)
     ### modify this function so that it returns an index two lines up from where the sentence is, so that it includes headings
     outputIndex = -1
     nextStartIndex = 0
@@ -83,11 +83,11 @@ def find_first_sentence_position(originalText):
                 outputIndex = indexOfMatch + nextStartIndex
                 break
             else:
-                print(
-                    "skipping because: ",
-                    isAlsoSentenceInNextNLines,
-                    hasMoreThanNSpaces,
-                )
+                # print(
+                #     "skipping because: ",
+                #     isAlsoSentenceInNextNLines,
+                #     hasMoreThanNSpaces,
+                # )
                 nextStartIndex += match.end()
         else:
             break

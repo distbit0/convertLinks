@@ -36,10 +36,14 @@ def download_youtube_video_as_mp3(url, max_size_mb):
 
     # Download the video using yt-dlp
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=True)
+        info_dict = ydl.extract_info(url, download=False)
         title = info_dict["title"]
         YTduration = info_dict["duration"]
         print("youtube duration", YTduration)
+        if YTduration < 60 * 5:
+            print("video too short, returning original url")
+            return None, None, None
+        info_dict = ydl.extract_info(url, download=True)
 
     # Get the downloaded MP3 file path
     mp3_file = os.path.join(output_dir, f"{randomNumber}.mp3")
@@ -86,6 +90,8 @@ def main(video_url):
     audio_chunks, title, videoScalingFactor = download_youtube_video_as_mp3(
         video_url, 0.8
     )
+    if videoScalingFactor == None:
+        return False
     client = OpenAI()
     markdown_transcript = f"[Original Video]({video_url})\n\n"
     sumOfPrevChunkDurations = 0
