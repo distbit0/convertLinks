@@ -16,7 +16,7 @@ def extract_and_validate_numbers_from_url(url):
     # Split the URL by slash to break it into parts
     parts = url.split("/")
     # Use a list comprehension to filter parts that can be converted to integers
-    numeric_parts = [part for part in parts if part.isdigit()]
+    numeric_parts = [part for part in parts if part.isdigit() or part == "@me"]
 
     # Check if there are exactly three numeric parts in the URL
     if len(numeric_parts) == 3:
@@ -130,7 +130,8 @@ def main(url):
     if extract_and_validate_numbers_from_url(url):
         channel_id, initial_message_id = extract_and_validate_numbers_from_url(url)
     else:
-        return url
+        print("invalid url")
+        return False
     all_messages = fetch_messages(channel_id, initial_message_id)
     html, firstMsg = createHtmlFromJSON(all_messages, url)
     urlToOpen = utilities.writeGist(html, "DISC: " + firstMsg, initial_message_id)
