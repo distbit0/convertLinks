@@ -4,16 +4,16 @@ import subprocess
 import json
 import threading
 from os import path
-import convertDiscord
-import convertTelegram
-import convertYoutube
-import convertPodcast
-import convertGitbook
-import convertSoundcloud
+from convertDiscord import convertDiscord
+from convertTelegram import convertTelegram
+from convertYoutube import convertYoutube
+from convertPodcast import convertPodcast
+from convertGitbook import convertGitbook
+from convertSoundcloud import convertSoundcloud
+from convertMp4 import convertMp4
+from convertStreameth import convertStreameth
 import traceback
-import convertMp4
 import os
-import convertStreameth
 
 
 def get_selected_text():
@@ -112,28 +112,28 @@ def open_in_browser(url):
 
 
 conversion_functions = {
-    "/watch?": {"function": convertYoutube.main, "alwaysConvert": True},
-    "docs.": {"function": convertGitbook.main, "alwaysConvert": True},
+    "/watch?": {"function": convertYoutube, "alwaysConvert": True},
+    "docs.": {"function": convertGitbook, "alwaysConvert": True},
     "twitter.com": {"function": returnUnchanged, "alwaysConvert": False},
     "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},
     "docs.google.com/document/": {
         "function": convertGDocs,
         "alwaysConvert": False,
     },
-    "streameth.org": {"function": convertStreameth.main, "alwaysConvert": False},
-    "https://t.me/c/": {"function": convertTelegram.main, "alwaysConvert": False},
-    ".mp4": {"function": convertMp4.main, "alwaysConvert": False},
-    "discord.com": {"function": convertDiscord.main, "alwaysConvert": False},
+    "streameth.org": {"function": convertStreameth, "alwaysConvert": False},
+    "https://t.me/c/": {"function": convertTelegram, "alwaysConvert": False},
+    ".mp4": {"function": convertMp4, "alwaysConvert": False},
+    "discord.com": {"function": convertDiscord, "alwaysConvert": False},
     "rumble.com": {"function": returnUnchanged, "alwaysConvert": True},
-    "gitbook": {"function": convertGitbook.main, "alwaysConvert": True},
+    "gitbook": {"function": convertGitbook, "alwaysConvert": True},
     "m.wikipedia.org": {"function": convertWikipedia, "alwaysConvert": True},
     "reddit.com": {"function": convertReddit, "alwaysConvert": True},
     "medium.com": {"function": convertMedium, "alwaysConvert": True},
-    "podcasts.apple.com": {"function": convertPodcast.main, "alwaysConvert": True},
-    "": {"function": convertDiscourse, "alwaysConvert": True},
+    "podcasts.apple.com": {"function": convertPodcast, "alwaysConvert": True},
+    "/t/": {"function": convertDiscourse, "alwaysConvert": True},
     "lesswrong.com": {"function": convertLesswrong, "alwaysConvert": True},
-    "soundcloud.com": {"function": convertSoundcloud.main, "alwaysConvert": True},
-    "/home/pimania/ebooks/": {"function": convertGitbook.main, "alwaysConvert": True},
+    "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": True},
+    "/home/pimania/ebooks/": {"function": convertGitbook, "alwaysConvert": True},
 }
 
 
@@ -146,6 +146,7 @@ def process_url(originalUrl, openInBrowser, openingToRead):
                 func = value["function"]
                 alwaysConvert = value["alwaysConvert"]
                 if alwaysConvert or openingToRead:
+                    # print("converting url", url, "with function", func.__name__)
                     url = func(url)
     except Exception as e:
         print(e)

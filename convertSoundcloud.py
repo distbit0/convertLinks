@@ -59,7 +59,7 @@ def download_podcast_episode(url, max_size_mb):
     return file_paths, track.title
 
 
-def main(episode_url):
+def convertSoundcloud(episode_url):
     episodeId = episode_url.split("/")[-1]
     gistUrl = utilities.getGistUrl(episodeId)
     if gistUrl:

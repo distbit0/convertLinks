@@ -126,7 +126,7 @@ def createHtmlFromJSON(messagesList, originalUrl):
     return html, firstMsg[:50]
 
 
-def main(url):
+def convertDiscord(url):
     if extract_and_validate_numbers_from_url(url):
         channel_id, initial_message_id = extract_and_validate_numbers_from_url(url)
     else:

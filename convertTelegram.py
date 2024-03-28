@@ -83,7 +83,7 @@ async def primary(url, client):
         return url
 
 
-def main(url):
+def convertTelegram(url):
     client = TelegramClient(session_name, api_id, api_hash)
     with client:
         urlToOpen = client.loop.run_until_complete(primary(url, client))

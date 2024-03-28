@@ -60,7 +60,7 @@ def download_mp4_and_convert_to_mp3(url, max_size_mb):
     return file_paths
 
 
-def main(mp4_url):
+def convertMp4(mp4_url):
     mp4Id = "".join(char for char in mp4_url if char.isalnum())
     domain = mp4_url.split("/")[2:3][0]
     fileName = mp4Id.split("/")[-1].split(".")[0]

@@ -81,7 +81,7 @@ def download_youtube_video_as_mp3(url, max_size_mb):
 
 
 # @pysnooper.snoop()
-def main(video_url):
+def convertYoutube(video_url):
     videoId = video_url.split("v=")[-1].split("&")[0]
     video_url = f"https://www.youtube.com/watch?v={videoId}"
     gistUrl = utilities.getGistUrl(videoId)

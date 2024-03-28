@@ -220,7 +220,7 @@ def jsonToHtml(json_data, topTweetId, headHtml):
     return outStr
 
 
-def main(tweet_id):
+def convertTwitter(tweet_id):
     config = json.loads(open("config.json").read())
     notify2.init("TwitterConvo")
     n = notify2.Notification("convo id:", str(tweet_id))

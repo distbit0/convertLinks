@@ -79,7 +79,7 @@ def download_mp4_and_convert_to_mp3(url, max_size_mb):
     return file_paths
 
 
-def main(streamethUrl):
+def convertStreameth(streamethUrl):
     mp4Url, name = getMp4UrlAndName(streamethUrl)
     id = "".join(char for char in mp4Url if char.isalnum())
     id += "_" + "".join(char for char in name if char.isalnum())
