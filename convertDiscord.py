@@ -1,4 +1,5 @@
 from os import path
+import pysnooper
 import json
 import pyperclip
 import subprocess
@@ -127,16 +128,17 @@ def createHtmlFromJSON(messagesList, originalUrl):
     return html, firstMsg[:50]
 
 
+@pysnooper.snoop()
 def convertDiscord(url):
     urlExtract = extract_and_validate_numbers_from_url(url)
     if urlExtract:
         channel_id, initial_message_id = urlExtract
-    gistUrl = utilities.getGistUrl(channel_id)
-    if gistUrl and "#update" not in url:
-        return gistUrl
     else:
         print("invalid url")
         return False
+    gistUrl = utilities.getGistUrl(channel_id)
+    if gistUrl and "#update" not in url:
+        return gistUrl
     all_messages = fetch_messages(channel_id, initial_message_id)
     html, firstMsg = createHtmlFromJSON(all_messages, url)
     urlToOpen = utilities.writeGist(html, "DISC: " + firstMsg, initial_message_id)

@@ -123,7 +123,7 @@ conversion_functions = {
     "streameth.org": {"function": convertStreameth, "alwaysConvert": False},
     "https://t.me/c/": {"function": convertTelegram, "alwaysConvert": False},
     ".mp4": {"function": convertMp4, "alwaysConvert": False},
-    "discord.com": {"function": convertDiscord, "alwaysConvert": False},
+    "discord.com": {"function": convertDiscord, "alwaysConvert": True},
     "rumble.com": {"function": returnUnchanged, "alwaysConvert": True},
     "gitbook": {"function": convertGitbook, "alwaysConvert": True},
     "m.wikipedia.org": {"function": convertWikipedia, "alwaysConvert": True},
