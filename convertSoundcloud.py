@@ -71,7 +71,7 @@ def convertSoundcloud(episode_url):
     client = OpenAI()
     markdown_transcript = f"[Original Podcast Episode]({episode_url})\n\n"
     for i, chunk_filename in enumerate(audio_chunks):
-        print("downloading chunk ", i + 1, "of", len(audio_chunks))
+        print("transcribing chunk", i + 1, "of", len(audio_chunks))
         with open(chunk_filename, "rb") as audio_file:
             transcript = client.audio.transcriptions.create(
                 file=audio_file,

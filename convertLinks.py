@@ -11,6 +11,7 @@ from convertPodcast import convertPodcast
 from convertGitbook import convertGitbook
 from convertSoundcloud import convertSoundcloud
 from convertMp4 import convertMp4
+from convertMp3 import convertMp3
 from convertStreameth import convertStreameth
 import traceback
 import os
@@ -48,7 +49,7 @@ def find_urls_in_text(text):
     if isValidUnixPath:
         return [text]
     url_pattern = re.compile(
-        r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?:#[a-zA-Z0-9-_]*)?"
+        r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?:#[a-zA-Z0-9-_\.]*)?"
     )
     return [url.strip(")") for url in url_pattern.findall(text)]
 
@@ -115,6 +116,7 @@ conversion_functions = {
     "/watch?": {"function": convertYoutube, "alwaysConvert": True},
     "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},
     ".mp4": {"function": convertMp4, "alwaysConvert": False},
+    ".mp3": {"function": convertMp3, "alwaysConvert": True},
     "podcasts.apple.com": {"function": convertPodcast, "alwaysConvert": True},
     "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": True},
     "rumble.com": {"function": returnUnchanged, "alwaysConvert": True},
