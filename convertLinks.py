@@ -113,27 +113,26 @@ def open_in_browser(url):
 
 conversion_functions = {
     "/watch?": {"function": convertYoutube, "alwaysConvert": True},
+    "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},
+    ".mp4": {"function": convertMp4, "alwaysConvert": False},
+    "podcasts.apple.com": {"function": convertPodcast, "alwaysConvert": True},
+    "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": True},
+    "rumble.com": {"function": returnUnchanged, "alwaysConvert": True},
+    "streameth.org": {"function": convertStreameth, "alwaysConvert": False},
     "docs.": {"function": convertGitbook, "alwaysConvert": True},
     "twitter.com": {"function": returnUnchanged, "alwaysConvert": False},
-    "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},
     "docs.google.com/document/": {
         "function": convertGDocs,
         "alwaysConvert": False,
     },
-    "streameth.org": {"function": convertStreameth, "alwaysConvert": False},
     "https://t.me/c/": {"function": convertTelegram, "alwaysConvert": False},
-    ".mp4": {"function": convertMp4, "alwaysConvert": False},
     "discord.com": {"function": convertDiscord, "alwaysConvert": True},
-    "rumble.com": {"function": returnUnchanged, "alwaysConvert": True},
     "gitbook": {"function": convertGitbook, "alwaysConvert": True},
     "m.wikipedia.org": {"function": convertWikipedia, "alwaysConvert": True},
     "reddit.com": {"function": convertReddit, "alwaysConvert": True},
     "medium.com": {"function": convertMedium, "alwaysConvert": True},
-    "podcasts.apple.com": {"function": convertPodcast, "alwaysConvert": True},
     "/t/": {"function": convertDiscourse, "alwaysConvert": True},
     "lesswrong.com": {"function": convertLesswrong, "alwaysConvert": True},
-    "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": True},
-    "/home/pimania/ebooks/": {"function": convertGitbook, "alwaysConvert": True},
 }
 
 

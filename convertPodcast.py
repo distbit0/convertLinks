@@ -88,7 +88,7 @@ def download_podcast_episode(url, max_size_mb):
 
 def convertPodcast(episode_url):
     podcastId = episode_url.split("/")[-1].split("?")[0]
-    episodeId = episode_url.split("?i=")[-1]
+    episodeId = episode_url.split("?i=")[-1].split("#")[0]
     episodeId = podcastId + "_" + episodeId
     gistUrl = utilities.getGistUrl(episodeId)
     if gistUrl:
