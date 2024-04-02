@@ -128,7 +128,6 @@ def createHtmlFromJSON(messagesList, originalUrl):
     return html, firstMsg[:50]
 
 
-@pysnooper.snoop()
 def convertDiscord(url):
     urlExtract = extract_and_validate_numbers_from_url(url)
     if urlExtract:

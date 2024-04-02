@@ -166,7 +166,7 @@ def process_url(originalUrl, openInBrowser, openingToRead):
             return url
 
 
-@pysnooper.snoop()
+# @pysnooper.snoop()
 def main(text, openInBrowser, openingToRead):
     textFromClipboard = not bool(text)
     selected_text = get_selected_text() if textFromClipboard else text
