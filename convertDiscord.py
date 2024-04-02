@@ -136,7 +136,7 @@ def convertDiscord(url):
     else:
         print("invalid url")
         return False
-    gistUrl = utilities.getGistUrl(channel_id)
+    gistUrl = utilities.getGistUrl(initial_message_id)
     if gistUrl and "#update" not in url:
         return gistUrl
     all_messages = fetch_messages(channel_id, initial_message_id)
