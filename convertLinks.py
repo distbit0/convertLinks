@@ -13,6 +13,7 @@ from convertSoundcloud import convertSoundcloud
 from convertMp4 import convertMp4
 from convertMp3 import convertMp3
 from convertStreameth import convertStreameth
+from convertRumble import convertRumble
 import traceback
 import os
 
@@ -117,9 +118,9 @@ conversion_functions = {
     "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},
     ".mp4": {"function": convertMp4, "alwaysConvert": False},
     ".mp3": {"function": convertMp3, "alwaysConvert": True},
+    "rumble.com": {"function": convertRumble, "alwaysConvert": True},
     "podcasts.apple.com": {"function": convertPodcast, "alwaysConvert": True},
     "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": True},
-    "rumble.com": {"function": returnUnchanged, "alwaysConvert": True},
     "streameth.org": {"function": convertStreameth, "alwaysConvert": False},
     "docs.": {"function": convertGitbook, "alwaysConvert": True},
     "twitter.com": {"function": returnUnchanged, "alwaysConvert": False},
