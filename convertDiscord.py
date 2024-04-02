@@ -13,6 +13,7 @@ load_dotenv()
 
 
 def extract_and_validate_numbers_from_url(url):
+    url = url.replace("#update", "")
     # Split the URL by slash to break it into parts
     parts = url.split("/")
     # Use a list comprehension to filter parts that can be converted to integers
@@ -127,8 +128,12 @@ def createHtmlFromJSON(messagesList, originalUrl):
 
 
 def convertDiscord(url):
-    if extract_and_validate_numbers_from_url(url):
-        channel_id, initial_message_id = extract_and_validate_numbers_from_url(url)
+    urlExtract = extract_and_validate_numbers_from_url(url)
+    if urlExtract:
+        channel_id, initial_message_id = urlExtract
+    gistUrl = utilities.getGistUrl(channel_id)
+    if gistUrl and "#update" not in url:
+        return gistUrl
     else:
         print("invalid url")
         return False
