@@ -199,8 +199,8 @@ def convertTwitter(url):
         onlyOp = False
     tweet_id = url.split("/")[-1].strip(".html").split("#")[0]
     gistUrl = utilities.getGistUrl(tweet_id)
-    # if gistUrl and "#update" not in url:
-    #     return gistUrl
+    if gistUrl and "#update" not in url:
+        return gistUrl
     client = PyTweetClient(auth_token=auth_token, csrf_token=csrf_token)
     rawReplies = getReplies(client, tweet_id, onlyOp)
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))

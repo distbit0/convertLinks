@@ -124,7 +124,7 @@ conversion_functions = {
     "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": True},
     "streameth.org": {"function": convertStreameth, "alwaysConvert": False},
     "docs.": {"function": convertGitbook, "alwaysConvert": True},
-    "twitter.com": {"function": convertTwitter, "alwaysConvert": True},
+    "twitter.com": {"function": convertTwitter, "alwaysConvert": False},
     "docs.google.com/document/": {
         "function": convertGDocs,
         "alwaysConvert": False,
@@ -148,7 +148,7 @@ def process_url(originalUrl, openInBrowser, openingToRead):
             if url and key in url:
                 func = value["function"]
                 alwaysConvert = value["alwaysConvert"]
-                if alwaysConvert or openingToRead:
+                if alwaysConvert or openingToRead or "#" in url:
                     # print("converting url", url, "with function", func.__name__)
                     url = func(url)
     except Exception as e:
