@@ -88,8 +88,6 @@ def getReplies(client, tweet_id, onlyOp, all_tweets=None):
                 else:
                     tweets, next_cursor, _ = client.search_latest(query)
                 i += 1
-                print("tweets from iteration ", i, ": Length", len(tweets), tweets)
-                print("next cursor", next_cursor)
                 all_tweets.extend(tweets)
                 if next_cursor is None or next_cursor == "" or len(tweets) == 0:
                     break
@@ -101,11 +99,10 @@ def getReplies(client, tweet_id, onlyOp, all_tweets=None):
                 pass
 
         all_tweets.append(mainTweet)
-        print(
-            "all tweets after appending main tweet length", len(all_tweets), all_tweets
-        )
 
     for reply in all_tweets:
+        print(reply)
+        print("\n" * 10)
         if reply.rest_id == tweet_id or reply.reply_count == 0:
             rawReplies.append(reply)
             continue
@@ -194,9 +191,12 @@ def parseReplies(rawReplies):
 
 
 def convertTwitter(url):
-    onlyOp = True
     if "#convo" in url:
         onlyOp = False
+    elif "#thread" in url:
+        onlyOp = True
+    else:
+        return url
     tweet_id = url.split("/")[-1].strip(".html").split("#")[0]
     gistUrl = utilities.getGistUrl(tweet_id)
     if gistUrl and "#update" not in url:
