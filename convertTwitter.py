@@ -62,14 +62,18 @@ def json_to_html(json_data, topTweet, op_username):
     return outStr
 
 
-def getReplies(client, tweet_id, all_tweets=None):
+def getReplies(client, tweet_id, onlyOp, all_tweets=None):
     print(tweet_id)
     rawReplies = []
 
     if all_tweets is None:
         all_tweets = []
         mainTweet = client.get_tweet(tweet_id)
-        query = f"conversation_id:{mainTweet.rest_id}"
+        opUsername = mainTweet.user.screen_name
+        if onlyOp:
+            query = f"conversation_id:{mainTweet.rest_id} from:{opUsername}"
+        else:
+            query = f"conversation_id:{mainTweet.rest_id}"
         cursor = None
         i = 0
         while True:
@@ -101,7 +105,7 @@ def getReplies(client, tweet_id, all_tweets=None):
         if reply.in_reply_to_tweet_id_str != tweet_id:
             continue
         print("down")
-        rawReplies.extend(getReplies(client, reply.rest_id, all_tweets))
+        rawReplies.extend(getReplies(client, reply.rest_id, onlyOp, all_tweets))
         print("up")
 
     return rawReplies
@@ -184,12 +188,15 @@ def parseReplies(rawReplies):
 
 
 def convertTwitter(url):
+    onlyOp = True
+    if "#convo" in url:
+        onlyOp = False
     tweet_id = url.split("/")[-1].strip(".html")
     gistUrl = utilities.getGistUrl(tweet_id)
     # if gistUrl and "#update" not in url:
     #     return gistUrl
     client = PyTweetClient(auth_token=auth_token, csrf_token=csrf_token)
-    rawReplies = getReplies(client, tweet_id)
+    rawReplies = getReplies(client, tweet_id, onlyOp)
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))
     # rawReplies = pickle.load(open("tmp/rawReplies.pickle", "rb"))
     replies = parseReplies(rawReplies)
