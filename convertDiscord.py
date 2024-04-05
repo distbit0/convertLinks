@@ -1,10 +1,6 @@
 from os import path
 import pysnooper
-import json
-import pyperclip
-import subprocess
 import re
-import json
 import requests
 from dotenv import load_dotenv
 import os

@@ -13,6 +13,7 @@ from convertSoundcloud import convertSoundcloud
 from convertMp4 import convertMp4
 from convertMp3 import convertMp3
 from convertStreameth import convertStreameth
+from convertTwitter import convertTwitter
 from convertRumble import convertRumble
 import traceback
 import os
@@ -123,7 +124,7 @@ conversion_functions = {
     "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": True},
     "streameth.org": {"function": convertStreameth, "alwaysConvert": False},
     "docs.": {"function": convertGitbook, "alwaysConvert": True},
-    "twitter.com": {"function": returnUnchanged, "alwaysConvert": False},
+    "twitter.com": {"function": convertTwitter, "alwaysConvert": True},
     "docs.google.com/document/": {
         "function": convertGDocs,
         "alwaysConvert": False,
