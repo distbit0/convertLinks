@@ -1,4 +1,5 @@
 from PyTweetToolkit import PyTweetClient
+import traceback
 import time
 import pickle
 import json
@@ -50,7 +51,9 @@ def json_to_html(json_data, topTweet, op_username):
             else:
                 tweetText += f'<br><img src="{tweet["image_url"]}">'
 
-        outStr = f"{indent}<details open><summary>{level+1}. {tweetText}</summary>\n"
+        outStr = (
+            f"{indent}<br><details open><summary>{level+1}. {tweetText}</summary>\n"
+        )
         # outStr += f"{indent}<ul>\n"
         for childId in tweet["children"]:
             outStr += convert_to_html(childId, level + 1)
@@ -92,6 +95,7 @@ def getReplies(client, tweet_id, onlyOp, all_tweets=None):
                     break
                 cursor = next_cursor
             except Exception as e:
+                print(traceback.format_exc())
                 print("network error", e, "sleeping for 5 minutes")
                 time.sleep(300)
                 pass
@@ -195,8 +199,8 @@ def convertTwitter(url):
         onlyOp = False
     tweet_id = url.split("/")[-1].strip(".html").split("#")[0]
     gistUrl = utilities.getGistUrl(tweet_id)
-    if gistUrl and "#update" not in url:
-        return gistUrl
+    # if gistUrl and "#update" not in url:
+    #     return gistUrl
     client = PyTweetClient(auth_token=auth_token, csrf_token=csrf_token)
     rawReplies = getReplies(client, tweet_id, onlyOp)
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))
