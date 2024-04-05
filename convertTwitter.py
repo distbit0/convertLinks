@@ -1,4 +1,5 @@
 from PyTweetToolkit import PyTweetClient
+import time
 import pickle
 import json
 from datetime import datetime, timedelta
@@ -6,6 +7,7 @@ import utilities
 import re
 from dotenv import load_dotenv
 import os
+
 
 load_dotenv()
 
@@ -49,16 +51,16 @@ def json_to_html(json_data, topTweet, op_username):
                 tweetText += f'<br><img src="{tweet["image_url"]}">'
 
         outStr = f"{indent}<details open><summary>{level+1}. {tweetText}</summary>\n"
-        outStr += f"{indent}<ul>\n"
+        # outStr += f"{indent}<ul>\n"
         for childId in tweet["children"]:
             outStr += convert_to_html(childId, level + 1)
-        outStr += f"{indent}</ul>\n"
+        # outStr += f"{indent}</ul>\n"
         outStr += f"{indent}</details>\n"
         return outStr
 
-    outStr = "<ul>\n"
-    outStr += convert_to_html(topTweet, 0)
-    outStr += "</ul>\n"
+    # outStr = "<ul>\n"
+    outStr = convert_to_html(topTweet, 0)
+    # outStr += "</ul>\n"
     return outStr
 
 
@@ -90,7 +92,8 @@ def getReplies(client, tweet_id, onlyOp, all_tweets=None):
                     break
                 cursor = next_cursor
             except Exception as e:
-                print("network error", e)
+                print("network error", e, "sleeping for 5 minutes")
+                time.sleep(300)
                 pass
 
         all_tweets.append(mainTweet)
@@ -116,7 +119,6 @@ def parseReplies(rawReplies):
     for reply in rawReplies:
         if reply.user.screen_name.lower() in ignored_accounts:
             continue
-
         onlyTagsSoFar = True
         contentWords = []
         if not hasattr(reply, "full_text"):
@@ -191,10 +193,10 @@ def convertTwitter(url):
     onlyOp = True
     if "#convo" in url:
         onlyOp = False
-    tweet_id = url.split("/")[-1].strip(".html")
+    tweet_id = url.split("/")[-1].strip(".html").split("#")[0]
     gistUrl = utilities.getGistUrl(tweet_id)
-    # if gistUrl and "#update" not in url:
-    #     return gistUrl
+    if gistUrl and "#update" not in url:
+        return gistUrl
     client = PyTweetClient(auth_token=auth_token, csrf_token=csrf_token)
     rawReplies = getReplies(client, tweet_id, onlyOp)
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))
