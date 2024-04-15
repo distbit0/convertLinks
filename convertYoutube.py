@@ -12,12 +12,11 @@ import pysnooper
 load_dotenv()
 
 
-def download_youtube_video_as_mp3(url, max_size_mb):
+def download_youtube_video_as_mp3(url):
     # Set the output directory relative to the script's location
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, "tmp")
     os.makedirs(output_dir, exist_ok=True)
-    utilities.deleteMp3sOlderThan(60 * 60 * 12, output_dir)
     currentTime = time.time()
     randomNumber = str(currentTime) + "_" + str(random.randint(1000000000, 9999999999))
 
@@ -48,52 +47,12 @@ def download_youtube_video_as_mp3(url, max_size_mb):
     # Get the downloaded MP3 file path
     mp3_file = os.path.join(output_dir, f"{randomNumber}.mp3")
 
-    # Load the MP3 file using pydub
-    audio = AudioSegment.from_mp3(mp3_file)
-
-    # Calculate the number of chunks based on the maximum size
-    chunk_size_bytes = max_size_mb * 1024 * 1024
-    total_chunks = ceil(len(audio) / chunk_size_bytes)
-
-    # Split the audio into chunks
-    cumDurOfChunks = 0
-    file_paths = []
-    for i in range(total_chunks):
-        start_time = i * chunk_size_bytes
-        end_time = min((i + 1) * chunk_size_bytes, len(audio))
-        chunk = audio[start_time:end_time]
-        chunk_file = os.path.join(output_dir, f"{randomNumber}_chunk_{i+1}.mp3")
-        cumDurOfChunks += len(chunk) / 1000
-        chunk.export(chunk_file, format="mp3")
-        file_paths.append(chunk_file)
-
-    os.remove(mp3_file)
-    print(
-        "origCumDurOfChunks",
-        cumDurOfChunks,
-        "YTduration",
-        YTduration,
-    )
-    videoScalingFactor = int(YTduration) / float(cumDurOfChunks)
-    print("videoScalingFactor", videoScalingFactor)
-
-    return file_paths, title, videoScalingFactor
+    return mp3_file, title
 
 
-# @pysnooper.snoop()
-def convertYoutube(video_url):
-    videoId = video_url.split("v=")[-1].split("&")[0]
-    video_url = f"https://www.youtube.com/watch?v={videoId}"
-    gistUrl = utilities.getGistUrl(videoId)
-    if gistUrl:
-        return gistUrl
-    audio_chunks, title, videoScalingFactor = download_youtube_video_as_mp3(
-        video_url, 0.8
-    )
-    if videoScalingFactor == None:
-        return False
+def transcribeYt(inputSource, inputUrl, audio_chunks, title):
     client = OpenAI()
-    markdown_transcript = f"[Original Video]({video_url})\n\n"
+    markdown_transcript = f"[Original {inputSource}]({inputUrl})\n\n"
     sumOfPrevChunkDurations = 0
     for i, chunk_filename in enumerate(audio_chunks):
         grouped_segments = []
@@ -117,7 +76,6 @@ def convertYoutube(video_url):
         )
         for j, segment in enumerate(transcript.segments):
             segment["start"] += sumOfPrevChunkDurations
-            segment["start"] *= videoScalingFactor
             currentGroup.append(segment)
             if j % 6 == 0:
                 startTime = currentGroup[0]["start"]
@@ -142,17 +100,32 @@ def convertYoutube(video_url):
 
         for segment in grouped_segments:
             start_time = int(segment["start"])
-            markdown_transcript += f"[{start_time}]({video_url}&t={int(start_time)}): {segment['text']}\n\n"
+            markdown_transcript += (
+                f"[{start_time}]({inputUrl}&t={int(start_time)}): {segment['text']}\n\n"
+            )
 
     print("sumOfPrevChunkDurations", sumOfPrevChunkDurations)
-
-    # Save the Markdown content to a Gist
-    gist_url = utilities.writeGist(
-        markdown_transcript, "YT: " + title, videoId, update=True
-    )
 
     # Delete all the temporary mp3 files
     for file in audio_chunks:
         os.remove(file)
+
+    return markdown_transcript
+
+
+# @pysnooper.snoop()
+def convertYoutube(video_url, forceRefresh):
+    inputSource = "YT video"
+    videoId = video_url.split("v=")[-1].split("&")[0]
+    video_url = f"https://www.youtube.com/watch?v={videoId}"
+    gistUrl = utilities.getGistUrl(videoId)
+    if gistUrl and not forceRefresh:
+        return gistUrl
+    mp3_file, title = download_youtube_video_as_mp3(video_url)
+    audio_chunks = utilities.chunk_mp3(mp3_file)
+    transcript = transcribeYt(inputSource, video_url, audio_chunks, title)
+    gist_url = utilities.writeGist(
+        transcript, f"{inputSource}: " + title, videoId, update=True
+    )
 
     return gist_url

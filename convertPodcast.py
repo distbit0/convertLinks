@@ -41,12 +41,11 @@ def get_podcast_episode_info(url):
     return None, None
 
 
-def download_podcast_episode(url, max_size_mb):
+def download_podcast_episode(url):
     # Set the output directory relative to the script's location
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, "tmp")
     os.makedirs(output_dir, exist_ok=True)
-    utilities.deleteMp3sOlderThan(60 * 60 * 12, output_dir)
     currentTime = time.time()
     randomNumber = str(currentTime) + "_" + str(random.randint(1000000000, 9999999999))
 
@@ -62,70 +61,21 @@ def download_podcast_episode(url, max_size_mb):
     with open(mp3_file, "wb") as file:
         file.write(response.content)
 
-    # Load the MP3 file using pydub
-    audio = AudioSegment.from_mp3(mp3_file)
-
-    # Calculate the number of chunks based on the maximum size
-    chunk_size_bytes = max_size_mb * 1024 * 1024
-    total_chunks = ceil(len(audio) / chunk_size_bytes)
-
-    # Split the audio into chunks
-    cumDurOfChunks = 0
-    file_paths = []
-    for i in range(total_chunks):
-        start_time = i * chunk_size_bytes
-        end_time = min((i + 1) * chunk_size_bytes, len(audio))
-        chunk = audio[start_time:end_time]
-        chunk_file = os.path.join(output_dir, f"{randomNumber}_chunk_{i+1}.mp3")
-        cumDurOfChunks += len(chunk) / 1000
-        chunk.export(chunk_file, format="mp3")
-        file_paths.append(chunk_file)
-
-    os.remove(mp3_file)
-
-    return file_paths, title
+    return mp3_file, title
 
 
-def convertPodcast(episode_url):
+def convertPodcast(episode_url, forceRefresh):
+    inputSource = "Podcast"
     podcastId = episode_url.split("/")[-1].split("?")[0]
     episodeId = episode_url.split("?i=")[-1].split("#")[0]
     episodeId = podcastId + "_" + episodeId
     gistUrl = utilities.getGistUrl(episodeId)
-    if gistUrl:
+    if gistUrl and not forceRefresh:
         return gistUrl
-    audio_chunks, title = download_podcast_episode(episode_url, 0.8)
-    client = OpenAI()
-    markdown_transcript = f"[Original Podcast Episode]({episode_url})\n\n"
-    for i, chunk_filename in enumerate(audio_chunks):
-        print("transcribing chunk", i + 1, "of", len(audio_chunks))
-        with open(chunk_filename, "rb") as audio_file:
-            transcript = client.audio.transcriptions.create(
-                file=audio_file,
-                model="whisper-1",
-                language="en",
-                response_format="text",
-                prompt=(
-                    "Title: "
-                    + title
-                    + " Continuation of podcast episode (might begin mid-sentence): "
-                    if i > 0
-                    else "Welcome to the podcast episode. "
-                ),
-            )
-
-        markdown_transcript += transcript + "\n\n"
-
-    markdown_transcript = re.sub(
-        r"((?:[^.!?]+[.!?]){6})", r"\1\n\n", markdown_transcript
-    )
-
-    # Save the Markdown content to a Gist
+    mp3_file, title = download_podcast_episode(episode_url)
+    audio_chunks = utilities.chunk_mp3(mp3_file)
+    transcript = utilities.transcribe_mp3(inputSource, episode_url, audio_chunks)
     gist_url = utilities.writeGist(
-        markdown_transcript, "Pod: " + title, episodeId, update=True
+        transcript, f"{inputSource}: " + title, episodeId, update=True
     )
-
-    # Delete all the temporary mp3 files
-    for file in audio_chunks:
-        os.remove(file)
-
     return gist_url

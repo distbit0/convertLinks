@@ -126,12 +126,12 @@ urlPatterns = [
 ]
 
 
-def convertGitbook(url):
+def convertGitbook(url, forceRefresh):
     if "docs.google.com" in url:
         return url
     unique_url = getUniqueUrl(url)
     gistUrl = utilities.getGistUrl(unique_url)
-    if gistUrl:
+    if gistUrl and not forceRefresh:
         return gistUrl
     if "/home/pimania/ebooks" in url:
         html_content = open(url).read()

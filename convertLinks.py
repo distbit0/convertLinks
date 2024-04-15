@@ -56,7 +56,7 @@ def find_urls_in_text(text):
     return [url.strip(")") for url in url_pattern.findall(text)]
 
 
-def convertGDocs(url):
+def convertGDocs(url, forceRefresh):
     url_parts = url.split("/")
     if "edit" in url_parts:
         edit_index = url_parts.index("edit")
@@ -68,17 +68,17 @@ def convertGDocs(url):
         return url
 
 
-def convertWikipedia(url):
+def convertWikipedia(url, forceRefresh):
     url = url.replace("en.m.wikipedia.org", "en.wikipedia.org").strip()
     return url
 
 
-def convertReddit(url):
+def convertReddit(url, forceRefresh):
     url = url.replace("https://www.reddit.com", "https://old.reddit.com").strip()
     return url
 
 
-def convertMedium(url):
+def convertMedium(url, forceRefresh):
     if "-" in url:
         if len(url.split("-")[-1]) == 12:
             domain = url.split("https://")[1].split("/")[0]
@@ -86,7 +86,7 @@ def convertMedium(url):
     return url
 
 
-def convertDiscourse(url):
+def convertDiscourse(url, forceRefresh):
     tempUrl = str(url)
     if tempUrl[-1] != "/":
         tempUrl += "/"
@@ -102,12 +102,12 @@ def convertDiscourse(url):
     return tempUrl
 
 
-def convertLesswrong(url):
+def convertLesswrong(url, forceRefresh):
     url = url.replace("lesswrong.com", "greaterwrong.com").strip()
     return url
 
 
-def returnUnchanged(url):
+def returnUnchanged(url, forceRefresh):
     return url
 
 

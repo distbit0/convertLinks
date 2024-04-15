@@ -190,7 +190,7 @@ def parseReplies(rawReplies):
     return replies_dict
 
 
-def convertTwitter(url):
+def convertTwitter(url, forceRefresh):
     if "#convo" in url:
         onlyOp = False
     elif "#thread" in url:
@@ -199,7 +199,7 @@ def convertTwitter(url):
         return url
     tweet_id = url.split("/")[-1].strip(".html").split("#")[0]
     gistUrl = utilities.getGistUrl(tweet_id)
-    if gistUrl:
+    if gistUrl and not forceRefresh:
         return gistUrl
     client = PyTweetClient(auth_token=auth_token, csrf_token=csrf_token)
     rawReplies = getReplies(client, tweet_id, onlyOp)

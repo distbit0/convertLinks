@@ -124,7 +124,7 @@ def createHtmlFromJSON(messagesList, originalUrl):
     return html, firstMsg[:50]
 
 
-def convertDiscord(url):
+def convertDiscord(url, forceRefresh):
     urlExtract = extract_and_validate_numbers_from_url(url)
     if urlExtract:
         channel_id, initial_message_id = urlExtract
@@ -132,7 +132,7 @@ def convertDiscord(url):
         print("invalid url")
         return False
     gistUrl = utilities.getGistUrl(initial_message_id)
-    if gistUrl:
+    if gistUrl and not forceRefresh:
         return gistUrl
     all_messages = fetch_messages(channel_id, initial_message_id)
     html, firstMsg = createHtmlFromJSON(all_messages, url)
