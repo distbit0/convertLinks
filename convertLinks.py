@@ -81,7 +81,8 @@ def convertReddit(url):
 def convertMedium(url):
     if "-" in url:
         if len(url.split("-")[-1]) == 12:
-            url = url.replace("medium.com", "scribe.rip").strip()
+            domain = url.split("https://")[1].split("/")[0]
+            url = url.replace(domain, "scribe.rip").strip()
     return url
 
 
@@ -115,13 +116,13 @@ def open_in_browser(url):
 
 
 conversion_functions = {
-    "/watch?": {"function": convertYoutube, "alwaysConvert": True},
+    "/watch?": {"function": convertYoutube, "alwaysConvert": False},
     "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},
     ".mp4": {"function": convertMp4, "alwaysConvert": False},
-    ".mp3": {"function": convertMp3, "alwaysConvert": True},
-    "rumble.com": {"function": convertRumble, "alwaysConvert": True},
-    "podcasts.apple.com": {"function": convertPodcast, "alwaysConvert": True},
-    "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": True},
+    ".mp3": {"function": convertMp3, "alwaysConvert": False},
+    "rumble.com": {"function": convertRumble, "alwaysConvert": False},
+    "podcasts.apple.com": {"function": convertPodcast, "alwaysConvert": False},
+    "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": False},
     "streameth.org": {"function": convertStreameth, "alwaysConvert": False},
     "docs.": {"function": convertGitbook, "alwaysConvert": True},
     "twitter.com": {"function": convertTwitter, "alwaysConvert": False},
@@ -130,7 +131,7 @@ conversion_functions = {
         "alwaysConvert": False,
     },
     "https://t.me/c/": {"function": convertTelegram, "alwaysConvert": False},
-    "discord.com": {"function": convertDiscord, "alwaysConvert": True},
+    "discord.com": {"function": convertDiscord, "alwaysConvert": False},
     "gitbook": {"function": convertGitbook, "alwaysConvert": True},
     "m.wikipedia.org": {"function": convertWikipedia, "alwaysConvert": True},
     "reddit.com": {"function": convertReddit, "alwaysConvert": True},
@@ -148,9 +149,11 @@ def process_url(originalUrl, openInBrowser, openingToRead):
             if url and key in url:
                 func = value["function"]
                 alwaysConvert = value["alwaysConvert"]
-                if alwaysConvert or openingToRead or "#" in url:
+                forceConvert = "#" in url
+                forceRefresh = "##" in url
+                if alwaysConvert or openingToRead or forceConvert:
                     # print("converting url", url, "with function", func.__name__)
-                    url = func(url)
+                    url = func(url, forceRefresh)
     except Exception as e:
         print(e)
         traceback.print_exc()
@@ -177,8 +180,8 @@ def main(text, openInBrowser, openingToRead):
         return []
 
     urls = find_urls_in_text(selected_text)
-    if len(urls) > 1:
-        openingToRead = True  # the fact that multiple are being opened is an indication that the intent may be to open them in @voice
+    # if len(urls) > 1:
+    #     openingToRead = True  # the fact that multiple are being opened is an indication that the intent may be to open them in @voice
     processed_urls = []
 
     threads = []
