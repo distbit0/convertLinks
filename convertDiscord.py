@@ -109,7 +109,7 @@ def createHtmlFromJSON(messagesList, originalUrl):
         re.sub(r"[^a-zA-Z ]", "", messagesList[0]["content"]) if messagesList else ""
     )
 
-    html = f'<p><a href="{originalUrl}">Link to Original Message</a></p>'
+    html = f"[Original message]({originalUrl})  \n\n"
 
     for message in messagesList:
         # Skip empty messages
@@ -132,6 +132,7 @@ def convertDiscord(url, forceRefresh):
         print("invalid url")
         return False
     gistUrl = utilities.getGistUrl(initial_message_id)
+    print("forceRefresh", forceRefresh)
     if gistUrl and not forceRefresh:
         return gistUrl
     all_messages = fetch_messages(channel_id, initial_message_id)

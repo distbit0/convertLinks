@@ -51,7 +51,7 @@ def find_urls_in_text(text):
     if isValidUnixPath:
         return [text]
     url_pattern = re.compile(
-        r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?:#[a-zA-Z0-9-_\.]*)?"
+        r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?:#*[a-zA-Z0-9-_\.]*)?"
     )
     return [url.strip(")") for url in url_pattern.findall(text)]
 
