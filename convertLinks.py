@@ -149,8 +149,8 @@ def process_url(originalUrl, openInBrowser, openingToRead):
             if url and key in url:
                 func = value["function"]
                 alwaysConvert = value["alwaysConvert"]
-                forceConvert = "#" in url
-                forceRefresh = "##" in url
+                forceConvert = "##" in url
+                forceRefresh = "###" in url
                 if alwaysConvert or openingToRead or forceConvert:
                     # print("converting url", url, "with function", func.__name__)
                     url = func(url, forceRefresh)
