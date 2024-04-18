@@ -39,7 +39,8 @@ def fetch_messages(channel_id, initial_message_id):
     last_timestamp = ""
 
     # Load cached messages and the latest message ID from the cache file if it exists
-    cache_file = f"message_cache_{channel_id}.json"
+    cache_file = f"storage/message_cache_{channel_id}.json"
+    cache_file = getAbsPath(cache_file)
     if os.path.exists(cache_file):
         with open(cache_file, "r") as f:
             cache_data = json.load(f)
