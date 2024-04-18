@@ -48,7 +48,7 @@ def fetch_messages(channel_id, initial_message_id):
             last_message_id = cache_data.get("latest_message_id", initial_message_id)
 
     while True:
-        time.sleep(1)
+        time.sleep(1.5)  # avoid rate limit
         params = {"limit": 100, "after": last_message_id}
         response = requests.get(
             f"{base_url}/{channel_id}/messages", headers=headers, params=params
