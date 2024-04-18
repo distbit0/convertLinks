@@ -1,10 +1,13 @@
 from os import path
+import time
 import pysnooper
 import re
 import requests
 from dotenv import load_dotenv
 import os
 import utilities
+import json
+from dateutil import parser
 
 load_dotenv()
 
@@ -31,23 +34,26 @@ def fetch_messages(channel_id, initial_message_id):
     headers = {
         "authorization": authToken,
     }
-
     all_messages = []
     last_message_id = initial_message_id
     last_timestamp = ""
-    first = True
+
+    # Load cached messages and the latest message ID from the cache file if it exists
+    cache_file = f"message_cache_{channel_id}.json"
+    if os.path.exists(cache_file):
+        with open(cache_file, "r") as f:
+            cache_data = json.load(f)
+            all_messages = cache_data.get("messages", [])
+            last_message_id = cache_data.get("latest_message_id", initial_message_id)
+
     while True:
-        params = {"limit": 100, "around": last_message_id}
+        time.sleep(1)
+        params = {"limit": 100, "after": last_message_id}
         response = requests.get(
             f"{base_url}/{channel_id}/messages", headers=headers, params=params
         )
         messages = response.json()
         messages.reverse()
-        if first:
-            indexOfFirstMessage = messages.index(
-                [message for message in messages if message["id"] == last_message_id][0]
-            )
-            messages = messages[indexOfFirstMessage:]
 
         modifiedMessages = []
         for message in messages:
@@ -71,14 +77,11 @@ def fetch_messages(channel_id, initial_message_id):
             print("already at latest timestamp last request")
             break  # Break if the last message timestamp hasn't changed, indicating no new messages
 
-        all_messages.extend(
-            [message for message in messages if message not in all_messages]
-        )
+        all_messages.extend(modifiedMessages)
+
         last_message_id = current_last_message["id"]
         last_timestamp = current_last_timestamp
 
-        # Update params for the next iteration to fetch messages before the current last message
-        params["before"] = last_message_id
         print(
             "\n".join(
                 [
@@ -87,9 +90,24 @@ def fetch_messages(channel_id, initial_message_id):
                 ]
             )
         )
-        first = False
 
-    return all_messages
+    # Save the cached messages and the latest message ID to the cache file
+    with open(cache_file, "w") as f:
+        json.dump({"messages": all_messages, "latest_message_id": last_message_id}, f)
+
+    # Convert the timestamp string to a Unix timestamp for each message
+    for message in all_messages:
+        timestamp_str = message["timestamp"]
+        timestamp = parser.parse(timestamp_str)
+        unix_timestamp = int(timestamp.timestamp())
+        message["unix_timestamp"] = unix_timestamp
+
+    # Sort the messages in ascending order based on the Unix timestamp
+    sorted_messages = sorted(
+        all_messages, key=lambda message: message["unix_timestamp"]
+    )
+
+    return sorted_messages
 
 
 def getAbsPath(relPath):
