@@ -107,6 +107,11 @@ def convertLesswrong(url, forceRefresh):
     return url
 
 
+def convertTelegram(url, forceRefresh):
+    url = url.replace("https://t.me", "https://web.t.me").strip()
+    return url
+
+
 def returnUnchanged(url, forceRefresh):
     return url
 
@@ -138,6 +143,7 @@ conversion_functions = {
     "medium.com": {"function": convertMedium, "alwaysConvert": True},
     "/t/": {"function": convertDiscourse, "alwaysConvert": True},
     "lesswrong.com": {"function": convertLesswrong, "alwaysConvert": True},
+    "https://t.me": {"function": convertTelegram, "alwaysConvert": True},
 }
 
 
