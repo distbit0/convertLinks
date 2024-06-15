@@ -1,4 +1,5 @@
 from PyTweetToolkit import PyTweetClient
+import subprocess
 import traceback
 import time
 import pickle
@@ -89,17 +90,20 @@ def getReplies(client, tweet_id, onlyOp, all_tweets=None):
                     tweets, next_cursor, _ = client.search_latest(query)
                 i += 1
                 all_tweets.extend(tweets)
+                # print("cursor", cursor, "len of tweets", len(tweets))
                 if next_cursor is None or next_cursor == "" or len(tweets) == 0:
                     break
                 cursor = next_cursor
             except Exception as e:
                 print(traceback.format_exc())
                 print("network error", e, "sleeping for 5 minutes")
+                subprocess.run(["notify-send", "sleep", "sleeping for 5 minutes"])
                 time.sleep(300)
                 pass
 
         all_tweets.append(mainTweet)
 
+    print("length of all_tweets", len(all_tweets))
     for reply in all_tweets:
         print(reply)
         print("\n" * 10)
