@@ -115,6 +115,8 @@ def transcribeYt(inputSource, inputUrl, audio_chunks, title):
 
 # @pysnooper.snoop()
 def convertYoutube(video_url, forceRefresh):
+    if "streameth" in video_url:
+        return
     inputSource = "YT video"
     videoId = video_url.split("v=")[-1].split("&")[0]
     video_url = f"https://www.youtube.com/watch?v={videoId}"
