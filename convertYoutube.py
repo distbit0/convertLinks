@@ -18,6 +18,7 @@ def download_youtube_video_as_mp3(url):
     output_dir = os.path.join(script_dir, "tmp")
     os.makedirs(output_dir, exist_ok=True)
     currentTime = time.time()
+    browserName = utilities.getConfig()["browserName"]
     randomNumber = str(currentTime) + "_" + str(random.randint(1000000000, 9999999999))
 
     # Configure yt-dlp options
@@ -31,6 +32,7 @@ def download_youtube_video_as_mp3(url):
             }
         ],
         "outtmpl": os.path.join(output_dir, f"{randomNumber}.%(ext)s"),
+        "cookiesfrombrowser": [browserName],
     }
 
     # Download the video using yt-dlp
