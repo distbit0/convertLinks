@@ -64,9 +64,9 @@ def transcribeYt(inputSource, inputUrl, audio_chunks, title):
         audio_segment = AudioSegment.from_file(chunk_filename, format="mp3")
         chunk_duration = len(audio_segment) / 1000  # Duration in seconds
         prompt = (
-            "Title: " + title + " Continuation of video (might begin mid-sentence): "
+            "Continuation of informative/technical video (might begin mid-sentence): "
             if i > 0
-            else "Welcome to my technical video. "
+            else "Welcome to this technical episode. "
         )
         transcript = client.audio.transcriptions.create(
             file=audio_file,
