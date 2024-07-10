@@ -14,7 +14,7 @@ import os
 load_dotenv()
 
 auth_token = os.getenv("TWITTER_AUTH_TOKEN")
-csrf_token = os.getenv("TWITTER_CSRF_TOKEN")
+csrf_token = os.getenv("TWITTER_CT0_TOKEN")
 
 ignored_accounts = ["memdotai", "threadreaderapp"]
 
