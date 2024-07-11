@@ -97,7 +97,9 @@ def getReplies(client, tweet_id, onlyOp, all_tweets=None):
             except Exception as e:
                 print(traceback.format_exc())
                 print("network error", e, "sleeping for 5 minutes")
-                subprocess.run(["notify-send", "sleep", "sleeping for 5 minutes"])
+                subprocess.run(
+                    ["notify-send", "sleep", "sleeping for 5 minutes" + str(e)]
+                )
                 time.sleep(300)
                 pass
 
