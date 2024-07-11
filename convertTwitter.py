@@ -102,7 +102,6 @@ def getReplies(client, tweet_id, onlyOp, all_tweets=None):
                 )
                 time.sleep(300)
                 pass
-
         all_tweets.append(mainTweet)
 
     print("length of all_tweets", len(all_tweets))
