@@ -28,7 +28,13 @@ def get_selected_text():
         )
         return selected_text
     except subprocess.CalledProcessError as e:
-        subprocess.run(["notify-send", "Clipboard Error", "Failed to read clipboard."])
+        subprocess.run(
+            [
+                "notify-send",
+                "Clipboard Error",
+                '"Failed to read clipboard.' + str(e) + '"',
+            ]
+        )
         return None
 
 

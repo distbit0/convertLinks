@@ -128,7 +128,7 @@ def createHtmlFromJSON(messagesList, originalUrl):
         re.sub(r"[^a-zA-Z ]", "", messagesList[0]["content"]) if messagesList else ""
     )
 
-    html = f"[Original message]({originalUrl})  \n\n"
+    html = f"[Original]({originalUrl})  \n\n"
 
     for message in messagesList:
         # Skip empty messages

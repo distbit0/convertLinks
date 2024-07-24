@@ -212,7 +212,7 @@ def convertTwitter(url, forceRefresh):
     # rawReplies = pickle.load(open("tmp/rawReplies.pickle", "rb"))
     replies = parseReplies(rawReplies)
     op_username = rawReplies[-1].user.screen_name
-    html = f"<a href={url}>Original Tweet</a><br><br>" + json_to_html(
+    html = f"<a href={url}>Original</a><br><br>" + json_to_html(
         replies, tweet_id, op_username
     )
     title = replies[tweet_id]["text"][:50]

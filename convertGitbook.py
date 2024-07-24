@@ -171,7 +171,7 @@ def convertGitbook(url, forceRefresh):
     markdown_content = fixAndMakeLinksAndImagesAbsolute(markdown_content, domainOfUrl)
 
     # Add the original URL as a Markdown link at the top of the content
-    markdown_content = f"[Link to original]({url})\n\n{markdown_content}"
+    markdown_content = f"[Original]({url})\n\n{markdown_content}"
 
     # Save the Markdown content to a Gist
     gist_url = utilities.writeGist(

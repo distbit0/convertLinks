@@ -54,7 +54,7 @@ def download_youtube_video_as_mp3(url):
 
 def transcribeYt(inputSource, inputUrl, audio_chunks, title):
     client = OpenAI()
-    markdown_transcript = f"[Original {inputSource}]({inputUrl})\n\n"
+    markdown_transcript = f"[Original]({inputUrl})\n\n"
     sumOfPrevChunkDurations = 0
     for i, chunk_filename in enumerate(audio_chunks):
         grouped_segments = []

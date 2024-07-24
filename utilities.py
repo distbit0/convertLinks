@@ -93,7 +93,7 @@ def chunk_mp3(mp3_file):
 
 def transcribe_mp3(inputSource, inputUrl, audio_chunks):
     client = OpenAI()
-    markdown_transcript = f"[Original {inputSource} File]({inputUrl})\n\n"
+    markdown_transcript = f"[Original]({inputUrl})\n\n"
     for i, chunk_filename in enumerate(audio_chunks):
         print("transcribing chunk", i + 1, "of", len(audio_chunks))
         with open(chunk_filename, "rb") as audio_file:

@@ -55,7 +55,7 @@ def createHtmlFromMessages(messagesList, originalUrl):
     # Extract the first message content for the HTML title, removing non-alphabetic characters and limiting to 100 chars
     firstMsg = re.sub(r"[^a-zA-Z ]", "", messagesList[0].text) if messagesList else ""
 
-    html = f'<p><a href="{originalUrl}">Link to Original Message</a></p>'
+    html = f'<p><a href="{originalUrl}">Original</a></p>'
 
     for message in messagesList:
         # Skip empty messages
