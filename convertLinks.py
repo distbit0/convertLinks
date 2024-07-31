@@ -17,24 +17,20 @@ from convertTwitter import convertTwitter
 from convertRumble import convertRumble
 import traceback
 import os
+import pyperclip
+from tkinter import Tk, messagebox
 
 
 def get_selected_text():
     try:
-        selected_text = subprocess.check_output(
-            ["xclip", "-o", "-selection", "clipboard"],
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
+        selected_text = pyperclip.paste()
         return selected_text
-    except subprocess.CalledProcessError as e:
-        subprocess.run(
-            [
-                "notify-send",
-                "Clipboard Error",
-                '"Failed to read clipboard.' + str(e) + '"',
-            ]
-        )
+    except Exception as e:
+        # Using tkinter for the error message as it's cross-platform
+        root = Tk()
+        root.withdraw()  # Hide the main window
+        messagebox.showerror("Clipboard Error", f"Failed to read clipboard: {str(e)}")
+        root.destroy()
         return None
 
 
