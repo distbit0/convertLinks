@@ -1,4 +1,5 @@
 from os import path
+import asyncio
 import re
 import utilities
 from telethon import TelegramClient
@@ -25,18 +26,23 @@ def extract_chat_id_and_message_id(url):
 
 async def fetch_messages(chat_id, initial_message_id, client):
     all_messages = []
-    last_message_id = initial_message_id
+    allMessageIds = []
+    last_message_id = initial_message_id - 1
 
     while True:
-        messages = await client.get_messages(chat_id, min_id=last_message_id, limit=100)
-
+        print("getting more messages... from message id:", last_message_id)
+        messages = await client.get_messages(
+            chat_id, min_id=last_message_id, limit=1000
+        )
+        messages = [message for message in messages if message.id not in allMessageIds]
+        messages.sort(key=lambda x: x.id)
+        for message in messages:
+            print(message.id)
         if not messages:
             print("No messages returned this time")
             break  # Break if no messages are returned
-
-        all_messages.extend(
-            [message for message in messages if message not in all_messages]
-        )
+        all_messages.extend(messages)
+        allMessageIds.extend([message.id for message in messages])
         last_message_id = messages[-1].id
 
     return all_messages
@@ -53,7 +59,19 @@ def createHtmlFromMessages(messagesList, originalUrl):
     messagesList.sort(key=lambda x: x.date)
 
     # Extract the first message content for the HTML title, removing non-alphabetic characters and limiting to 100 chars
-    firstMsg = re.sub(r"[^a-zA-Z ]", "", messagesList[0].text) if messagesList else ""
+    firstMsg = ""
+    i = 0
+    while not firstMsg:
+        try:
+            extractedText = (
+                re.sub(r"[^a-zA-Z ]", "", messagesList[i].text) if messagesList else ""
+            )
+        except:
+            pass
+        else:
+            if extractedText:
+                firstMsg = extractedText
+        i += 1
 
     html = f'<p><a href="{originalUrl}">Original</a></p>'
 
@@ -64,7 +82,11 @@ def createHtmlFromMessages(messagesList, originalUrl):
 
         username = message.sender.username if message.sender else "Unknown"
         content = message.text.replace("\n", "<br>") if message.text else ""
-        messageLink = f"{originalUrl.split('?')[0]}?comment={message.id}"
+        baseChatUrl = originalUrl.split("?")[0]
+        if len(baseChatUrl.split("/")) > 5:
+            baseChatUrl = "/".join(baseChatUrl.split("/")[:5])
+        messageLink = f"{baseChatUrl}/{message.id}"
+        messageLink = messageLink.replace("https://t.me", "https://web.t.me")
 
         html += f'<p><a href="{messageLink}">{username}</a>: {content}</p>'
 
@@ -84,7 +106,9 @@ async def primary(url, client):
 
 
 def convertTelegram(url, forceRefresh):
-    client = TelegramClient(session_name, api_id, api_hash)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    client = TelegramClient(session_name, api_id, api_hash, loop=loop)
     with client:
         urlToOpen = client.loop.run_until_complete(primary(url, client))
     return urlToOpen
