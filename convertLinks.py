@@ -109,9 +109,9 @@ def convertLesswrong(url, forceRefresh):
     return url
 
 
-def convertTelegram(url, forceRefresh):
-    url = url.replace("https://t.me", "https://web.t.me").strip()
-    return url
+# def convertTelegram(url, forceRefresh):
+#     url = url.replace("https://t.me", "https://web.t.me").strip()
+#     return url
 
 
 def returnUnchanged(url, forceRefresh):
