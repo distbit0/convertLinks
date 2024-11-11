@@ -80,6 +80,7 @@ def getReplies(client, tweet_id, onlyOp, all_tweets=None):
             query = f"conversation_id:{mainTweet.rest_id} from:{opUsername}"
         else:
             query = f"conversation_id:{mainTweet.rest_id}"
+        print("query", query)
         cursor = None
         i = 0
         while True:
