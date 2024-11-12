@@ -3,4 +3,5 @@
 OLD_PATH=$PATH
 source /home/pimania/dev/guiFromCron/crongui.sh
 PATH=$PATH:$OLD_PATH
-uv run /home/pimania/dev/convertLinks/convertLinks.py
+cd /home/pimania/dev/convertLinks
+uv run convertLinks.py
