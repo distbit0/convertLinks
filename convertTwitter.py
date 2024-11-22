@@ -224,6 +224,6 @@ def convertTwitter(url, forceRefresh):
 if __name__ == "__main__":
     print(
         convertTwitter(
-            "https://twitter.com/colludingnode/status/1775792986955096435#convo"
+            "https://x.com/metaproph3t/status/1858607154858783222#convo", forceRefresh=True
         )
     )
