@@ -224,6 +224,6 @@ def convertTwitter(url, forceRefresh):
 if __name__ == "__main__":
     print(
         convertTwitter(
-            "https://x.com/metaproph3t/status/1858607154858783222#convo", forceRefresh=True
+            "https://x.com/AustinAdams10/status/1839669813125247161#convo", forceRefresh=True ###fix this code eventually. it is not including some replies in the final gist, even though they were returned by the twitter api
         )
     )
