@@ -41,9 +41,9 @@ def download_youtube_video_as_mp3(url):
         title = info_dict["title"]
         YTduration = info_dict["duration"]
         print("youtube duration", YTduration)
-        if YTduration < 60 * 5:
+        if YTduration < 60 * 4:
             print("video too short, returning original url")
-            return None, None, None
+            return None, None
         info_dict = ydl.extract_info(url, download=True)
 
     # Get the downloaded MP3 file path
@@ -77,11 +77,12 @@ def transcribeYt(inputSource, inputUrl, audio_chunks, title):
             prompt=prompt,
         )
         for j, segment in enumerate(transcript.segments):
-            segment["start"] += sumOfPrevChunkDurations
+            print(dict(segment))
+            segment.start += sumOfPrevChunkDurations
             currentGroup.append(segment)
             if j % 6 == 0:
-                startTime = currentGroup[0]["start"]
-                text = " ".join([segment["text"] for segment in currentGroup])
+                startTime = currentGroup[0].start
+                text = " ".join([segment.text for segment in currentGroup])
                 grouped_segments.append(
                     {
                         "start": startTime,
@@ -90,8 +91,8 @@ def transcribeYt(inputSource, inputUrl, audio_chunks, title):
                 )
                 currentGroup = []
         if currentGroup:
-            startTime = currentGroup[0]["start"]
-            text = " ".join([segment["text"] for segment in currentGroup])
+            startTime = currentGroup[0].start
+            text = " ".join([segment.text for segment in currentGroup])
             grouped_segments.append(
                 {
                     "start": startTime,
