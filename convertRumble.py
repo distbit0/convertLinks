@@ -1,5 +1,5 @@
 import yt_dlp
-import pysnooper
+
 import time
 from pydub import AudioSegment
 import re
@@ -45,7 +45,7 @@ def download_rumble_video_as_mp3(url):
     return mp3_file, title
 
 
-@pysnooper.snoop()
+#@pysnooper.snoop()
 def convertRumble(video_url, forceRefresh):
     inputSource = "Rumble"
     videoId = video_url.split("/")[-1]

@@ -1,6 +1,6 @@
 from os import path
 import time
-import pysnooper
+
 import re
 import requests
 from dotenv import load_dotenv

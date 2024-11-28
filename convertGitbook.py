@@ -3,7 +3,7 @@ import requests
 import html2text
 import utilities
 from bs4 import BeautifulSoup
-import pysnooper
+
 import sys
 
 sys.path.append("/home/pimania/dev/articleSearchAndSync/src")

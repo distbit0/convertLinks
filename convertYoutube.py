@@ -7,7 +7,7 @@ import utilities
 import os
 from dotenv import load_dotenv
 from math import ceil
-import pysnooper
+
 
 load_dotenv()
 
