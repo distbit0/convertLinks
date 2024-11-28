@@ -271,7 +271,6 @@ dependencies = [
     { name = "pysnooper" },
     { name = "python-dateutil" },
     { name = "python-dotenv" },
-    { name = "pytweettoolkit" },
     { name = "requests" },
     { name = "secretstorage" },
     { name = "soundcloud-lib" },
@@ -296,7 +295,6 @@ requires-dist = [
     { name = "pysnooper", specifier = ">=1.2.0,<2.0.0" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
-    { name = "pytweettoolkit", specifier = ">=1.0.1" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "secretstorage", specifier = ">=3.3.3" },
     { name = "soundcloud-lib", specifier = ">=0.6.1" },
@@ -874,19 +872,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/bc/57/e84d88dfe0aec03b7a2d4327012c1627ab5f03652216c63d49846d7a6c58/python-dotenv-1.0.1.tar.gz", hash = "sha256:e324ee90a023d808f1959c46bcbc04446a10ced277783dc6ee09987c37ec10ca", size = 39115 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/3e/b68c118422ec867fa7ab88444e1274aa40681c606d59ac27de5a5588f082/python_dotenv-1.0.1-py3-none-any.whl", hash = "sha256:f7b63ef50f1b690dddf550d03497b66d609393b40b564ed0d674909a68ebf16a", size = 19863 },
-]
-
-[[package]]
-name = "pytweettoolkit"
-version = "1.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pillow" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6d/20/5702bfbd880abd7f3b0f7c10c83f9e57c7c3dc44b9cd1f9fd95ea8503085/pytweettoolkit-1.0.1.tar.gz", hash = "sha256:d11679de7fb20631dbccd145126260172a467e7f043b5c32b11a615c2a9348b9", size = 30659 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/0f/ef0f272df6823d26e4a593bb4716b5b3e19e61a41bbc46aea9ce38abce0f/PyTweetToolkit-1.0.1-py3-none-any.whl", hash = "sha256:83d9fa1df6c9a356377dc3edda7347b8156311becda814eac91d0ddf50bb637b", size = 41304 },
 ]
 
 [[package]]
