@@ -26,7 +26,6 @@ dependencies = [
     "urlexpander>=0.0.37",
     "pypdf2",
     "soundcloud-lib>=0.6.1",
-    "pytweettoolkit>=1.0.1",
     "secretstorage>=3.3.3",
 ]
 requires-python = ">=3.13"
