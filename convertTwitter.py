@@ -74,16 +74,6 @@ headers = {
 }
 
 def get_tweet_by_id(tweet_id):
-    """
-    Make Twitter API request and return tweet object matching the given tweet ID.
-    
-    Args:
-        tweet_id (str): The ID of the tweet to find
-        
-    Returns:
-        dict: The matching tweet object, or None if not found
-    """
-    # API endpoint and parameters
     base_url = "https://x.com/i/api/graphql/nBS-WpgA6ZG0CyNHD517JQ/TweetDetail"
     
     # Request parameters
@@ -118,7 +108,6 @@ def get_tweet_by_id(tweet_id):
         response.raise_for_status()  # Raise exception for bad status codes
         response_data = response.json()
 
-        # Get the entries from the response
         try:
             entries = response_data['data']['threaded_conversation_with_injections_v2']['instructions'][0]['entries']
         except (KeyError, IndexError):
@@ -167,54 +156,6 @@ def get_tweet_by_id(tweet_id):
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON response: {e}")
         return None
-
-def json_to_html(json_data, topTweet, op_username):
-    def convert_https_to_md(string):
-        pattern = r"https:\/\/\S+"
-        links = re.findall(pattern, string)
-        for link in links:
-            string = string.replace(link, f'<a href="{link}">{link}</a>')
-        return string
-
-    def addTweetMdLink(tweet, link, isFirstTweet):
-        pattern = r"\{.*?\}"
-        username = re.findall(pattern, tweet)[0]
-        destString = f'<a href="{link}">{username}</a>'
-        isOp = username == "{" + op_username + "}"
-        if isOp and (not isFirstTweet):
-            destString = '<a href="' + link + '">{OP}</a>'
-        string = tweet.replace(username, destString)
-        return string
-
-    def convert_to_html(tweet_id, level):
-        outStr = ""
-        indent = "  " * level
-        tweet = json_data[tweet_id]
-        tweetText = convert_https_to_md(tweet["text"])
-        tweetText = addTweetMdLink(tweetText, tweet["link"], level == 0).replace(
-            "\n", "<br>"
-        )
-
-        if tweet["image_url"]:
-            if "mp4" in tweet["image_url"]:
-                tweetText += '<a href="' + tweet["image_url"] + '">[Video]</a>'
-            else:
-                tweetText += f'<br><img src="{tweet["image_url"]}">'
-
-        outStr = (
-            f"{indent}<br><details open><summary>{level+1}. {tweetText}</summary>\n"
-        )
-        # outStr += f"{indent}<ul>\n"
-        for childId in tweet["children"]:
-            outStr += convert_to_html(childId, level + 1)
-        # outStr += f"{indent}</ul>\n"
-        outStr += f"{indent}</details>\n"
-        return outStr
-
-    # outStr = "<ul>\n"
-    outStr = convert_to_html(topTweet, 0)
-    # outStr += "</ul>\n"
-    return outStr
 
 
 def getReplies(conversation_id, onlyOp=False, max_retries=12, retry_delay=180):  # 180 seconds = 3 minutes
@@ -307,6 +248,8 @@ def parseReplies(rawReplies):
         contentWords = []
         
         full_text = reply["legacy"].get("full_text")
+        if "note_tweet" in reply:
+            full_text = reply.get("note_tweet").get("note_tweet_results").get("result").get("text")
         if not full_text:
             continue
             
@@ -388,6 +331,61 @@ def parseReplies(rawReplies):
 
     return replies_dict
 
+def json_to_html(json_data, topTweet, op_username):
+    def convert_https_to_md(string):
+        pattern = r"https:\/\/\S+"
+        links = re.findall(pattern, string)
+        for link in links:
+            string = string.replace(link, f'<a href="{link}">{link}</a>')
+        return string
+
+    def addTweetMdLink(tweet, link, isFirstTweet):
+        pattern = r"\{.*?\}"
+        username = re.findall(pattern, tweet)[0]
+        destString = f'<a href="{link}">{username}</a>'
+        isOp = username == "{" + op_username + "}"
+        if isOp and (not isFirstTweet):
+            destString = '<a href="' + link + '">{OP}</a>'
+        string = tweet.replace(username, destString)
+        return string
+
+    def convert_to_html(tweet_id, level):
+        outStr = ""
+        indent = "  " * level
+        tweet = json_data[tweet_id]
+        tweetText = convert_https_to_md(tweet["text"])
+        tweetText = addTweetMdLink(tweetText, tweet["link"], level == 0).replace(
+            "\n", "<br>"
+        )
+
+        if tweet["image_url"]:
+            if "mp4" in tweet["image_url"]:
+                tweetText += '<a href="' + tweet["image_url"] + '">[Video]</a>'
+            else:
+                tweetText += f'<br><img src="{tweet["image_url"]}">'
+
+        outStr = (
+            f"{indent}<br><details open><summary>{level+1}. {tweetText}</summary><br>\n"
+        )
+        # outStr += f"{indent}<ul>\n"
+        for childId in tweet["children"]:
+            outStr += convert_to_html(childId, level + 1)
+        # outStr += f"{indent}</ul>\n"
+        endsWithNotReply = False
+        notReplyStr = "<p>END THREAD</p>\n"
+        endDetailsStr = "</details><br>\n"
+        if outStr.replace(endDetailsStr, "").replace("  ", "").endswith(notReplyStr): #do not want to duplicate this msg due to multiple de-indents
+            endsWithNotReply = True
+        outStr += f"{indent}{endDetailsStr}"
+        if not endsWithNotReply:
+            outStr += f"{indent}{notReplyStr}"
+        return outStr
+
+    # outStr = "<ul>\n"
+    outStr = convert_to_html(topTweet, 0)
+    # outStr += "</ul>\n"
+    return outStr
+
 def convertTwitter(url, forceRefresh):
     if "#convo" in url:
         onlyOp = False
@@ -415,6 +413,7 @@ def convertTwitter(url, forceRefresh):
 if __name__ == "__main__":
     print(
         convertTwitter(
-            "https://x.com/pablothee/status/1859336438711513530###convo", forceRefresh=True
+            "https://x.com/metaproph3t/status/1858607154858783222###convo", forceRefresh=True
         )
     )
+    # print(json.dumps(get_tweet_by_id("1858629520871375295"), indent=4))
