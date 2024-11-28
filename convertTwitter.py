@@ -16,7 +16,6 @@ auth_token = os.getenv("TWITTER_AUTH_TOKEN")
 csrf_token = os.getenv("TWITTER_CT0_TOKEN")
 bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
 guest_id = os.getenv("TWITTER_GUEST_ID")
-ktd = os.getenv("TWITTER_KTD")
 twid = os.getenv("TWITTER_TWID")
 dprefs = os.getenv("TWITTER_DPREFS")
 xClientTxid = os.getenv("TWITTER_XCLIENTTXID")
@@ -55,7 +54,7 @@ headers = {
     'authorization': f'Bearer {bearer_token}',
     'cache-control': 'no-cache',
     'content-type': 'application/json',
-    'cookie': f'night_mode=2; guest_id={guest_id}; kdt={ktd}; auth_token={auth_token}; ct0={csrf_token}; twid={twid}; dnt=1; d_prefs={dprefs}; lang=en',
+    'cookie': f'night_mode=2; guest_id={guest_id}; kdt={guest_id}; auth_token={auth_token}; ct0={csrf_token}; twid={twid}; dnt=1; d_prefs={dprefs}; lang=en',
     'pragma': 'no-cache',
     'referer': 'https://x.com/search?q=conversation_id%3A1861105589847285835&src=typed_query&f=live',
     'sec-ch-ua': '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
@@ -416,6 +415,6 @@ def convertTwitter(url, forceRefresh):
 if __name__ == "__main__":
     print(
         convertTwitter(
-            "https://x.com/aidan_mclau/status/1861105589847285835###convo", forceRefresh=True
+            "https://x.com/pablothee/status/1859336438711513530###convo", forceRefresh=True
         )
     )
