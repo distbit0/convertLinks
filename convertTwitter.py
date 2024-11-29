@@ -135,10 +135,16 @@ def get_tweet_by_id(tweet_id):
 
 
 def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
+    image_url = ""
+    if "extended_entities" in tweet["legacy"] and "media" in tweet["legacy"]["extended_entities"]:
+        media = tweet["legacy"]["extended_entities"]["media"]
+        if len(media) > 0 and "media_url_https" in media[0]:
+            image_url = media[0]["media_url_https"]
+    tweet["legacy"]["full_text"] = tweet["legacy"]["full_text"].replace(image_url, "") ##so images not counted as links
     noReplies = len([twt for twt in allTweets if "in_reply_to_status_id_str" in twt["legacy"] and twt["legacy"]["in_reply_to_status_id_str"] == tweet["rest_id"]]) == 0
     isReplyToOP = "in_reply_to_screen_name" in tweet["legacy"] and tweet["legacy"]["in_reply_to_screen_name"].lower() == opUsername.lower()
     fewLikes = tweet["legacy"]["favorite_count"] < 3
-    manyWords = len(tweet["legacy"]["full_text"].split(" ")) > 6
+    manyWords = len(tweet["legacy"]["full_text"].split(" ")) > 7
     byOp = tweet["core"]["user_results"]["result"]["legacy"]["screen_name"].lower() == opUsername.lower()
     noLinks = "https://" not in tweet["legacy"]["full_text"] or "full_text" not in tweet["legacy"]
     lowQuality = (not manyWords) and noReplies and (not byOp) and noLinks
