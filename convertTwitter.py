@@ -150,7 +150,7 @@ def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
     lowQuality = (not manyWords) and noReplies and (not byOp) and noLinks
     lowQualReplyToOp = isReplyToOP and lowQuality
     lowQualReply = lowQuality
-    if lowQualReplyToOp or lowQualReply and highQuality:
+    if (lowQualReplyToOp or lowQualReply) and highQuality:
         print(f"skipping tweet: {tweet['legacy']['full_text'][:60]} |||| https://x.com/{tweet['core']['user_results']['result']['legacy']['screen_name']}/status/{tweet['rest_id']},  due to: lowQualReplyToOp: {lowQualReplyToOp}, lowQualReply: {lowQualReply}\n")
         return True
     return False
