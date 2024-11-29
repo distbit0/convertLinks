@@ -280,7 +280,7 @@ def parseReplies(rawReplies, opUsername, highQuality):
         text = "{" + reply["core"]["user_results"]["result"]["legacy"]["screen_name"] + "} " + text
         
         # Handle quoted tweets
-        if "quoted_status_result" in reply:
+        if "quoted_status_result" in reply and "result" in reply["quoted_status_result"]:
             quoted_tweet = reply["quoted_status_result"]["result"]
             if "legacy" in quoted_tweet and "full_text" in quoted_tweet["legacy"]:
                 text += " {Quoted tweet} " + quoted_tweet["legacy"]["full_text"]
