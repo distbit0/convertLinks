@@ -143,8 +143,8 @@ def getReplies(conversation_id, onlyOp=False, ignoreOrphans=False, max_retries=7
     if onlyOp:
         username = mainTweet["core"]["user_results"]["result"]["legacy"]["screen_name"]
         query = f"conversation_id:{conversation_id} from:{username}"
-    elif ignoreOrphans:
-        query = f"conversation_id:{conversation_id} min_faves:2"
+    # elif ignoreOrphans:
+    #     query = f"conversation_id:{conversation_id} min_faves:2" # this is actually bad as a single reply in a convo with <2 likes will cut off rest of convo
     else:
         query = f"conversation_id:{conversation_id}"
     
