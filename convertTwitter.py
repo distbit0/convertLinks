@@ -134,16 +134,32 @@ def get_tweet_by_id(tweet_id):
         return None
 
 
-def getReplies(conversation_id, onlyOp=False, ignoreOrphans=False, max_retries=7, retry_delay=180):  # 180 seconds = 3 minutes
+def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
+    noReplies = len([twt for twt in allTweets if "in_reply_to_status_id_str" in twt["legacy"] and twt["legacy"]["in_reply_to_status_id_str"] == tweet["rest_id"]]) == 0
+    isReplyToOP = "in_reply_to_screen_name" in tweet["legacy"] and tweet["legacy"]["in_reply_to_screen_name"].lower() == opUsername.lower()
+    fewLikes = tweet["legacy"]["favorite_count"] < 3
+    manyWords = len(tweet["legacy"]["full_text"].split(" ")) > 6
+    byOp = tweet["core"]["user_results"]["result"]["legacy"]["screen_name"].lower() == opUsername.lower()
+    noLinks = "https://" not in tweet["legacy"]["full_text"] or "full_text" not in tweet["legacy"]
+    lowQuality = (not manyWords) and noReplies and (not byOp) and noLinks
+    lowQualReplyToOp = isReplyToOP and lowQuality
+    lowQualReply = lowQuality
+    if lowQualReplyToOp or lowQualReply and highQuality:
+        print(f"skipping tweet: {tweet['legacy']['full_text'][:60]} |||| https://x.com/{tweet['core']['user_results']['result']['legacy']['screen_name']}/status/{tweet['rest_id']},  due to: lowQualReplyToOp: {lowQualReplyToOp}, lowQualReply: {lowQualReply}\n")
+        return True
+    return False
+
+
+def getReplies(conversation_id, onlyOp=False, max_retries=10, retry_delay=180):  # 180 seconds = 3 minutes
     print(conversation_id)
     mainTweet = get_tweet_by_id(conversation_id)
+    opUsername = mainTweet["core"]["user_results"]["result"]["legacy"]["screen_name"]
     if not mainTweet:
         print("Main tweet not found.")
         return None
     if onlyOp:
-        username = mainTweet["core"]["user_results"]["result"]["legacy"]["screen_name"]
-        query = f"conversation_id:{conversation_id} from:{username}"
-    # elif ignoreOrphans:
+        query = f"conversation_id:{conversation_id} from:{opUsername}"
+    # elif highQuality:
     #     query = f"conversation_id:{conversation_id} min_faves:2" # this is actually bad as a single reply in a convo with <2 likes will cut off rest of convo
     else:
         query = f"conversation_id:{conversation_id}"
@@ -205,11 +221,8 @@ def getReplies(conversation_id, onlyOp=False, ignoreOrphans=False, max_retries=7
                 item_content = content.get('itemContent', {})
                 tweet = item_content.get('tweet_results', {}).get('result')
                 if tweet and "rest_id" in tweet and tweet["rest_id"] not in [tweet["rest_id"] for tweet in all_tweets]:
-                    isOprhan = tweet["legacy"]["reply_count"] == tweet["legacy"]["retweet_count"] == 0 and tweet["legacy"]["in_reply_to_status_id_str"] == conversation_id
-                    if ignoreOrphans and isOprhan:
-                        continue
                     all_tweets.append(tweet)
-                    newtweets += 1
+                    newtweets += 1 
                 if "cursor-bottom" in entry.get('entryId', "") or "cursor-bottom" in entry.get("entry_id_to_replace", ""):
                     bottom_cursor = entry.get('content', {}).get('value')
         if bottom_cursor and newtweets > 0:
@@ -228,15 +241,21 @@ def getReplies(conversation_id, onlyOp=False, ignoreOrphans=False, max_retries=7
     return all_tweets
 
 
-def parseReplies(rawReplies):
+def parseReplies(rawReplies, opUsername, highQuality):
     replies_dict = {}
     for reply in rawReplies:
         if reply["core"]["user_results"]["result"]["legacy"]["screen_name"].lower() in ignored_accounts:
             continue
-            
+        try:
+            if identifyLowQualityTweet(reply, opUsername, highQuality, rawReplies):
+                continue
+        except:
+            print(traceback.format_exc())
+            print(reply)
+            continue
+        
         onlyTagsSoFar = True
         contentWords = []
-        
         full_text = reply["legacy"].get("full_text")
         if "note_tweet" in reply:
             full_text = reply.get("note_tweet").get("note_tweet_results").get("result").get("text")
@@ -382,7 +401,7 @@ def convertTwitter(url, forceRefresh):
     elif "#thread" in url:
         onlyOp = True
     elif "#hq" in url:
-        ignoreOrphans = True
+        highQuality = True
         onlyOp = False
     else:
         return url
@@ -390,11 +409,11 @@ def convertTwitter(url, forceRefresh):
     gistUrl = utilities.getGistUrl(tweet_id)
     if gistUrl and not forceRefresh:
         return gistUrl
-    rawReplies = getReplies(tweet_id, onlyOp, ignoreOrphans)
+    rawReplies = getReplies(tweet_id, onlyOp)
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))
     # rawReplies = pickle.load(open("tmp/rawReplies.pickle", "rb"))
-    replies = parseReplies(rawReplies)
     op_username = rawReplies[0]["core"]["user_results"]["result"]["legacy"]["screen_name"]
+    replies = parseReplies(rawReplies, op_username, highQuality)
     html = f"<a href={url}>Original</a><br><br>" + json_to_html(
         replies, tweet_id, op_username
     )
