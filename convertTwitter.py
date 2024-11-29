@@ -12,41 +12,16 @@ import requests
 
 load_dotenv()
 
-auth_token = os.getenv("TWITTER_AUTH_TOKEN")
 csrf_token = os.getenv("TWITTER_CT0_TOKEN")
 bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
-guest_id = os.getenv("TWITTER_GUEST_ID")
-twid = os.getenv("TWITTER_TWID")
-dprefs = os.getenv("TWITTER_DPREFS")
 xClientTxid = os.getenv("TWITTER_XCLIENTTXID")
+cookie = os.getenv("TWITTER_COOKIE")
 
 ignored_accounts = ["memdotai", "threadreaderapp"]
 
-features = {
-  "rweb_tipjar_consumption_enabled": True,
-  "responsive_web_graphql_exclude_directive_enabled": True,
-  "verified_phone_label_enabled": False,
-  "creator_subscriptions_tweet_preview_api_enabled": True,
-  "responsive_web_graphql_timeline_navigation_enabled": True,
-  "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
-  "communities_web_enable_tweet_community_results_fetch": True,
-  "c9s_tweet_anatomy_moderator_badge_enabled": True,
-  "articles_preview_enabled": True,
-  "responsive_web_edit_tweet_api_enabled": True,
-  "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
-  "view_counts_everywhere_api_enabled": True,
-  "longform_notetweets_consumption_enabled": True,
-  "responsive_web_twitter_article_tweet_consumption_enabled": True,
-  "tweet_awards_web_tipping_enabled": False,
-  "creator_subscriptions_quote_tweet_preview_enabled": False,
-  "freedom_of_speech_not_reach_fetch_enabled": True,
-  "standardized_nudges_misinfo": True,
-  "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": True,
-  "rweb_video_timestamps_enabled": True,
-  "longform_notetweets_rich_text_read_enabled": True,
-  "longform_notetweets_inline_media_enabled": True,
-  "responsive_web_enhance_cards_enabled": False
-}
+features = '{"profile_label_improvements_pcf_account_label_enabled":false,"rweb_tipjar_consumption_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"creator_subscriptions_quote_tweet_preview_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}'
+
+
 
 headers = {
     'accept': '*/*',
@@ -54,9 +29,10 @@ headers = {
     'authorization': f'Bearer {bearer_token}',
     'cache-control': 'no-cache',
     'content-type': 'application/json',
-    'cookie': f'night_mode=2; guest_id={guest_id}; kdt={guest_id}; auth_token={auth_token}; ct0={csrf_token}; twid={twid}; dnt=1; d_prefs={dprefs}; lang=en',
+    'cookie': cookie,
     'pragma': 'no-cache',
-    'referer': 'https://x.com/search?q=conversation_id%3A1861105589847285835&src=typed_query&f=live',
+    'priority': 'u=1, i',
+    'referer': 'https://x.com/search?q=conversation_id%3A1862299845710757980+min_faves%3A2&src=typed_query&f=live',
     'sec-ch-ua': '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"Linux"',
@@ -79,7 +55,7 @@ def get_tweet_by_id(tweet_id):
     # Request parameters
     variables = {
         "focalTweetId": tweet_id,
-        "with_rux_injections": False,
+        "with_rux_injections": True,
         "rankingMode": "Relevance",
         "includePromotedContent": True,
         "withCommunity": True,
@@ -98,7 +74,7 @@ def get_tweet_by_id(tweet_id):
     # URL parameters
     params = {
         'variables': json.dumps(variables),
-        'features': json.dumps(features),
+        'features': features,
         'fieldToggles': json.dumps(field_toggles)
     }
     
@@ -158,7 +134,8 @@ def get_tweet_by_id(tweet_id):
         return None
 
 
-def getReplies(conversation_id, onlyOp=False, max_retries=12, retry_delay=180):  # 180 seconds = 3 minutes
+def getReplies(conversation_id, onlyOp=False, ignoreOrphans=False, max_retries=7, retry_delay=180):  # 180 seconds = 3 minutes
+    print(conversation_id)
     mainTweet = get_tweet_by_id(conversation_id)
     if not mainTweet:
         print("Main tweet not found.")
@@ -166,10 +143,13 @@ def getReplies(conversation_id, onlyOp=False, max_retries=12, retry_delay=180): 
     if onlyOp:
         username = mainTweet["core"]["user_results"]["result"]["legacy"]["screen_name"]
         query = f"conversation_id:{conversation_id} from:{username}"
+    elif ignoreOrphans:
+        query = f"conversation_id:{conversation_id} min_faves:2"
     else:
         query = f"conversation_id:{conversation_id}"
     
-    url = 'https://x.com/i/api/graphql/MJpyQGqgklrVl_0X9gNy3A/SearchTimeline'
+    url = 'https://x.com/i/api/graphql/MJuDXJXZ8bB--c9Ujhy-0g/SearchTimeline'
+    print("query", query)
 
     all_tweets = [mainTweet]
     cursor = None
@@ -180,12 +160,13 @@ def getReplies(conversation_id, onlyOp=False, max_retries=12, retry_delay=180): 
             "count": 20,
             "querySource": "typed_query",
             "product": "Latest",
-            "cursor": cursor
         }
+        if cursor:
+            variables["cursor"] = cursor
 
         params = {
-            'variables': json.dumps(variables).replace(" ", ""),
-            'features': json.dumps(features).replace(" ", "")
+            'variables': json.dumps(variables),
+            'features': features
         }
 
         retry_count = 0
@@ -224,6 +205,9 @@ def getReplies(conversation_id, onlyOp=False, max_retries=12, retry_delay=180): 
                 item_content = content.get('itemContent', {})
                 tweet = item_content.get('tweet_results', {}).get('result')
                 if tweet and "rest_id" in tweet and tweet["rest_id"] not in [tweet["rest_id"] for tweet in all_tweets]:
+                    isOprhan = tweet["legacy"]["reply_count"] == tweet["legacy"]["retweet_count"] == 0 and tweet["legacy"]["in_reply_to_status_id_str"] == conversation_id
+                    if ignoreOrphans and isOprhan:
+                        continue
                     all_tweets.append(tweet)
                     newtweets += 1
                 if "cursor-bottom" in entry.get('entryId', "") or "cursor-bottom" in entry.get("entry_id_to_replace", ""):
@@ -232,7 +216,13 @@ def getReplies(conversation_id, onlyOp=False, max_retries=12, retry_delay=180): 
             cursor = bottom_cursor
             print(f"Fetching next page with cursor: {cursor}, newtweets: {newtweets}")
             time.sleep(1)  # Respect rate limits
+        elif newtweets == 0:
+            print("no new tweets. New cursor:", cursor)
+            with open("tmp/noNewTweets.json", "w") as f:
+                f.write(json.dumps(data, indent=4))
+            break
         else:
+            print(f"no new cursor, {newtweets} new tweets")
             break
     
     return all_tweets
@@ -391,13 +381,16 @@ def convertTwitter(url, forceRefresh):
         onlyOp = False
     elif "#thread" in url:
         onlyOp = True
+    elif "#hq" in url:
+        ignoreOrphans = True
+        onlyOp = False
     else:
         return url
     tweet_id = url.split("/")[-1].strip(".html").split("#")[0]
     gistUrl = utilities.getGistUrl(tweet_id)
     if gistUrl and not forceRefresh:
         return gistUrl
-    rawReplies = getReplies(tweet_id, onlyOp)
+    rawReplies = getReplies(tweet_id, onlyOp, ignoreOrphans)
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))
     # rawReplies = pickle.load(open("tmp/rawReplies.pickle", "rb"))
     replies = parseReplies(rawReplies)
@@ -413,7 +406,7 @@ def convertTwitter(url, forceRefresh):
 if __name__ == "__main__":
     print(
         convertTwitter(
-            "https://x.com/metaproph3t/status/1858607154858783222###convo", forceRefresh=True
+            "https://x.com/metaproph3t/status/1862299845710757980###hq", forceRefresh=True
         )
     )
     # print(json.dumps(get_tweet_by_id("1858629520871375295"), indent=4))
