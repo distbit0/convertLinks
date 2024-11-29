@@ -143,7 +143,7 @@ def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
     tweet["legacy"]["full_text"] = tweet["legacy"]["full_text"].replace(image_url, "") ##so images not counted as links
     noReplies = len([twt for twt in allTweets if "in_reply_to_status_id_str" in twt["legacy"] and twt["legacy"]["in_reply_to_status_id_str"] == tweet["rest_id"]]) == 0
     isReplyToOP = "in_reply_to_screen_name" in tweet["legacy"] and tweet["legacy"]["in_reply_to_screen_name"].lower() == opUsername.lower()
-    fewLikes = tweet["legacy"]["favorite_count"] < 3
+    # fewLikes = tweet["legacy"]["favorite_count"] < 3
     manyWords = len(tweet["legacy"]["full_text"].split(" ")) > 7
     byOp = tweet["core"]["user_results"]["result"]["legacy"]["screen_name"].lower() == opUsername.lower()
     noLinks = "https://" not in tweet["legacy"]["full_text"] or "full_text" not in tweet["legacy"]
@@ -402,13 +402,14 @@ def json_to_html(json_data, topTweet, op_username):
     return outStr
 
 def convertTwitter(url, forceRefresh):
+    onlyOp = False
+    highQuality = False
     if "#convo" in url:
-        onlyOp = False
+        pass
     elif "#thread" in url:
         onlyOp = True
     elif "#hq" in url:
         highQuality = True
-        onlyOp = False
     else:
         return url
     tweet_id = url.split("/")[-1].strip(".html").split("#")[0]
