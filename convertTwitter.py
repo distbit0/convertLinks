@@ -237,8 +237,8 @@ def getReplies(conversation_id, onlyOp=False, max_retries=10, retry_delay=180): 
             time.sleep(1)  # Respect rate limits
         elif newtweets == 0:
             print("no new tweets. New cursor:", cursor)
-            with open("tmp/noNewTweets.json", "w") as f:
-                f.write(json.dumps(data, indent=4))
+            # with open("tmp/noNewTweets.json", "w") as f:
+            #     f.write(json.dumps(data, indent=4))
             break
         else:
             print(f"no new cursor, {newtweets} new tweets")
