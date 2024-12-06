@@ -404,12 +404,12 @@ def json_to_html(json_data, topTweet, op_username):
         )
         
         # Sort children by their longest reply chain length
-        sorted_children = sorted(
-            tweet["children"],
-            key=lambda x: get_longest_chain_length(x, json_data),
-            reverse=True
-        )
-        
+        # sorted_children = sorted(
+        #     tweet["children"],
+        #     key=lambda x: get_longest_chain_length(x, json_data),
+        #     reverse=True
+        # ) ###this is 100% depth first. a bit to extreme imo, because it makes other replies less contexualised
+        sorted_children = tweet["children"]
         for childId in sorted_children:
             outStr += convert_to_html(childId, level + 1)
         # outStr += f"{indent}</ul>\n"
