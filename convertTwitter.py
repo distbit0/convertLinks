@@ -346,6 +346,26 @@ def parseReplies(rawReplies, opUsername, highQuality):
 
     return replies_dict
 
+def get_longest_chain_length(tweet_id, json_data, cache=None):
+    """Calculate the length of the longest reply chain starting from this tweet."""
+    if cache is None:
+        cache = {}
+    
+    if tweet_id in cache:
+        return cache[tweet_id]
+        
+    if tweet_id not in json_data:
+        return 0
+        
+    children = json_data[tweet_id]["children"]
+    if not children:
+        return 0
+        
+    max_child_length = max(get_longest_chain_length(child, json_data, cache) for child in children)
+    result = 1 + max_child_length
+    cache[tweet_id] = result
+    return result
+
 def json_to_html(json_data, topTweet, op_username):
     def convert_https_to_md(string):
         pattern = r"https:\/\/\S+"
@@ -382,8 +402,15 @@ def json_to_html(json_data, topTweet, op_username):
         outStr = (
             f"{indent}<br><details open><summary>{level+1}. {tweetText}</summary><br>\n"
         )
-        # outStr += f"{indent}<ul>\n"
-        for childId in tweet["children"]:
+        
+        # Sort children by their longest reply chain length
+        sorted_children = sorted(
+            tweet["children"],
+            key=lambda x: get_longest_chain_length(x, json_data),
+            reverse=True
+        )
+        
+        for childId in sorted_children:
             outStr += convert_to_html(childId, level + 1)
         # outStr += f"{indent}</ul>\n"
         endsWithNotReply = False
