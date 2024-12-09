@@ -1,4 +1,5 @@
 import traceback
+import re
 import time
 import pickle
 import json
@@ -384,9 +385,25 @@ def json_to_html(json_data, topTweet, op_username):
         string = tweet.replace(username, destString)
         return string
 
+    def remove_redundant_end_threads(text):
+        # Pattern to match consecutive END THREAD elements with only whitespace and tags between them
+        pattern = r'(<p>END THREAD</p>)\s*(?:<br>|</ul>\s*</details>)*\s*(<p>END THREAD</p>)'
+        
+        # Keep replacing matches until no more changes occur
+        while True:
+            new_text = re.sub(pattern, r'\2', text)
+            if new_text == text:  # No more changes
+                break
+            text = new_text
+        
+        return text
+    
+    def cleanText(text, endDetailsStr):
+        return text.replace(endDetailsStr, "").replace("</ul>", "").replace(" ", "").replace("\n", "")
+
     def convert_to_html(tweet_id, level):
         outStr = ""
-        indent = "  " * level
+        indent = "  " #* level
         tweet = json_data[tweet_id]
         tweetText = convert_https_to_md(tweet["text"])
         tweetText = addTweetMdLink(tweetText, tweet["link"], level == 0).replace(
@@ -415,13 +432,16 @@ def json_to_html(json_data, topTweet, op_username):
             outStr += convert_to_html(childId, level + 1)
         outStr += f"{indent}</ul>\n"
         endsWithNotReply = False
-        notReplyStr = "<p>END THREAD</p>\n"
-        endDetailsStr = "</details><br>\n"
-        if outStr.replace(endDetailsStr, "").replace("  ", "").endswith(notReplyStr): #do not want to duplicate this msg due to multiple de-indents
+        notReplyStr = "<br><p>END THREAD</p>\n"
+        endDetailsStr = "</details>\n"
+        cleanedText = cleanText(outStr, endDetailsStr)
+        cleanedNotReplyStr = cleanText(notReplyStr, endDetailsStr)
+        if cleanedText.endswith(cleanedNotReplyStr): ## prevent duplication of this element due to > 1 consecutive de-indents
             endsWithNotReply = True
         outStr += f"{indent}{endDetailsStr}"
         if not endsWithNotReply:
             outStr += f"{indent}{notReplyStr}"
+        # outStr = remove_redundant_end_threads(outStr)
         return outStr
 
     # outStr = "<ul>\n"
@@ -460,7 +480,7 @@ def convertTwitter(url, forceRefresh):
 if __name__ == "__main__":
     print(
         convertTwitter(
-            "https://x.com/metaproph3t/status/1862299845710757980###hq", forceRefresh=True
+            "https://x.com/metaproph3t/status/1863281120927760692###convo", forceRefresh=True
         )
     )
     # print(json.dumps(get_tweet_by_id("1858629520871375295"), indent=4))
