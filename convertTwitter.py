@@ -390,7 +390,7 @@ def json_to_html(json_data, topTweet, op_username):
 
     def convert_to_html(tweet_id, level):
         outStr = ""
-        indent = "  " #* level
+        indent = "  " * level
         tweet = json_data[tweet_id]
         tweetText = convert_https_to_md(tweet["text"])
         tweetText = addTweetMdLink(tweetText, tweet["link"], level == 0).replace(
