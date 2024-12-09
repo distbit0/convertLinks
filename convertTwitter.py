@@ -384,19 +384,6 @@ def json_to_html(json_data, topTweet, op_username):
             destString = '<a href="' + link + '">{OP}</a>'
         string = tweet.replace(username, destString)
         return string
-
-    def remove_redundant_end_threads(text):
-        # Pattern to match consecutive END THREAD elements with only whitespace and tags between them
-        pattern = r'(<p>END THREAD</p>)\s*(?:<br>|</ul>\s*</details>)*\s*(<p>END THREAD</p>)'
-        
-        # Keep replacing matches until no more changes occur
-        while True:
-            new_text = re.sub(pattern, r'\2', text)
-            if new_text == text:  # No more changes
-                break
-            text = new_text
-        
-        return text
     
     def cleanText(text, endDetailsStr):
         return text.replace(endDetailsStr, "").replace("</ul>", "").replace(" ", "").replace("\n", "")
@@ -441,12 +428,9 @@ def json_to_html(json_data, topTweet, op_username):
         outStr += f"{indent}{endDetailsStr}"
         if not endsWithNotReply:
             outStr += f"{indent}{notReplyStr}"
-        # outStr = remove_redundant_end_threads(outStr)
         return outStr
 
-    # outStr = "<ul>\n"
     outStr = convert_to_html(topTweet, 0)
-    # outStr += "</ul>\n"
     return outStr
 
 def convertTwitter(url, forceRefresh):
