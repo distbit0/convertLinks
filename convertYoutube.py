@@ -7,7 +7,7 @@ import utilities
 import os
 from dotenv import load_dotenv
 from math import ceil
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 load_dotenv()
 
@@ -51,8 +51,6 @@ def download_youtube_video_as_mp3(url):
 
     return mp3_file, title
 
-
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def transcribe_chunk(client, chunk_filename, chunk_index, total_chunks, sum_of_prev_durations):
     grouped_segments = []
