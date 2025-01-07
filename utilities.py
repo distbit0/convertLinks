@@ -115,7 +115,7 @@ def transcribe_mp3_chunk(client, chunk_filename, chunk_index, total_chunks):
 def transcribe_mp3(inputSource, inputUrl, audio_chunks):
     client = OpenAI()
     markdown_transcript = f"[Original]({inputUrl})\n\n"
-    
+    print("transcribing mp3")
     # Process chunks in parallel
     with ThreadPoolExecutor() as executor:
         futures = [

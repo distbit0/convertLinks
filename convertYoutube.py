@@ -98,7 +98,7 @@ def transcribeYt(inputSource, inputUrl, audio_chunks, title):
     client = OpenAI()
     markdown_transcript = f"[Original]({inputUrl})\n\n"
     sumOfPrevChunkDurations = 0
-    
+    print("transcribing yt")
     # Process chunks in parallel
     with ThreadPoolExecutor() as executor:
         futures = [
