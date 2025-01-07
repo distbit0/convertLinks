@@ -91,24 +91,54 @@ def chunk_mp3(mp3_file):
     return file_paths
 
 ### might be worthwhile to modify this so it includes timestamps in the output even if they are not clickable
+def transcribe_mp3_chunk(client, chunk_filename, chunk_index, total_chunks):
+    print(f"transcribing chunk {chunk_index + 1} of {total_chunks}")
+    with open(chunk_filename, "rb") as audio_file:
+        transcript = client.audio.transcriptions.create(
+            file=audio_file,
+            model="whisper-1",
+            language="en",
+            response_format="text",
+            prompt=(
+                "Continuation of audio (might begin mid-sentence): "
+                if chunk_index > 0
+                else "Welcome to this technical episode. "
+            ),
+        )
+    return {
+        "filename": chunk_filename,
+        "transcript": transcript,
+        "chunk_index": chunk_index
+    }
+
 def transcribe_mp3(inputSource, inputUrl, audio_chunks):
     client = OpenAI()
     markdown_transcript = f"[Original]({inputUrl})\n\n"
-    for i, chunk_filename in enumerate(audio_chunks):
-        print("transcribing chunk", i + 1, "of", len(audio_chunks))
-        with open(chunk_filename, "rb") as audio_file:
-            transcript = client.audio.transcriptions.create(
-                file=audio_file,
-                model="whisper-1",
-                language="en",
-                response_format="text",
-                prompt=(
-                    "Continuation of audio (might begin mid-sentence): "
-                    if i > 0
-                    else "Welcome to this technical episode. "
-                ),
+    
+    # Process chunks in parallel
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(
+                transcribe_mp3_chunk,
+                client,
+                chunk_filename,
+                i,
+                len(audio_chunks)
             )
-        markdown_transcript += transcript + "\n\n"
+            for i, chunk_filename in enumerate(audio_chunks)
+        ]
+        
+        # Collect results in order
+        results = []
+        for future in as_completed(futures):
+            results.append(future.result())
+        
+        # Sort results by chunk index to maintain original order
+        results.sort(key=lambda x: x["chunk_index"])
+        
+        # Process results in order
+        for result in results:
+            markdown_transcript += result["transcript"] + "\n\n"
 
     markdown_transcript = re.sub(
         r"((?:\[^.!?\]+\[.!?\]){6})", r"\1\n\n", markdown_transcript
