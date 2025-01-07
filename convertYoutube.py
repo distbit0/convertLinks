@@ -97,7 +97,6 @@ def transcribe_chunk(client, chunk_filename, chunk_index, total_chunks, sum_of_p
 def transcribeYt(inputSource, inputUrl, audio_chunks, title):
     client = OpenAI()
     markdown_transcript = f"[Original]({inputUrl})\n\n"
-    sumOfPrevChunkDurations = 0
     print("transcribing yt")
     # Process chunks in parallel
     with ThreadPoolExecutor() as executor:
@@ -108,7 +107,7 @@ def transcribeYt(inputSource, inputUrl, audio_chunks, title):
                 chunk_filename,
                 i,
                 len(audio_chunks),
-                sumOfPrevChunkDurations
+                0  # Don't pass sumOfPrevChunkDurations here
             )
             for i, chunk_filename in enumerate(audio_chunks)
         ]
@@ -121,9 +120,12 @@ def transcribeYt(inputSource, inputUrl, audio_chunks, title):
         # Sort results by chunk index to maintain original order
         results.sort(key=lambda x: x["chunk_index"])
         
-        # Process results in order
+        # Process results in order and accumulate durations
+        sumOfPrevChunkDurations = 0
         for result in results:
+            # Adjust timestamps based on previous chunks' durations
             for segment in result["grouped_segments"]:
+                segment["start"] += sumOfPrevChunkDurations
                 start_time = int(segment["start"])
                 markdown_transcript += (
                     f"[{start_time}]({inputUrl}&t={int(start_time)}): {segment['text']}\n\n"
