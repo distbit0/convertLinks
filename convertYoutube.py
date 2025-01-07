@@ -52,60 +52,85 @@ def download_youtube_video_as_mp3(url):
     return mp3_file, title
 
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def transcribe_chunk(client, chunk_filename, chunk_index, total_chunks, sum_of_prev_durations):
+    grouped_segments = []
+    currentGroup = []
+    print(f"transcribing chunk {chunk_index + 1} of {total_chunks}")
+    audio_file = open(chunk_filename, "rb")
+    audio_segment = AudioSegment.from_file(chunk_filename, format="mp3")
+    chunk_duration = len(audio_segment) / 1000  # Duration in seconds
+    prompt = (
+        "Continuation of informative/technical video (might begin mid-sentence): "
+        if chunk_index > 0
+        else "Welcome to this technical episode. "
+    )
+    transcript = client.audio.transcriptions.create(
+        file=audio_file,
+        model="whisper-1",
+        language="en",
+        response_format="verbose_json",
+        timestamp_granularities=["segment"],
+        prompt=prompt,
+    )
+    
+    for j, segment in enumerate(transcript.segments):
+        print(dict(segment))
+        segment.start += sum_of_prev_durations
+        currentGroup.append(segment)
+        if j % 6 == 0:
+            startTime = currentGroup[0].start
+            text = " ".join([segment.text for segment in currentGroup])
+            grouped_segments.append({"start": startTime, "text": text})
+            currentGroup = []
+    if currentGroup:
+        startTime = currentGroup[0].start
+        text = " ".join([segment.text for segment in currentGroup])
+        grouped_segments.append({"start": startTime, "text": text})
+    
+    return {
+        "filename": chunk_filename,
+        "grouped_segments": grouped_segments,
+        "chunk_duration": chunk_duration,
+        "chunk_index": chunk_index
+    }
+
 def transcribeYt(inputSource, inputUrl, audio_chunks, title):
     client = OpenAI()
     markdown_transcript = f"[Original]({inputUrl})\n\n"
     sumOfPrevChunkDurations = 0
-    for i, chunk_filename in enumerate(audio_chunks):
-        grouped_segments = []
-        currentGroup = []
-        print("transcribing chunk", i + 1, "of", len(audio_chunks))
-        audio_file = open(chunk_filename, "rb")
-        audio_segment = AudioSegment.from_file(chunk_filename, format="mp3")
-        chunk_duration = len(audio_segment) / 1000  # Duration in seconds
-        prompt = (
-            "Continuation of informative/technical video (might begin mid-sentence): "
-            if i > 0
-            else "Welcome to this technical episode. "
-        )
-        transcript = client.audio.transcriptions.create(
-            file=audio_file,
-            model="whisper-1",
-            language="en",
-            response_format="verbose_json",
-            timestamp_granularities=["segment"],
-            prompt=prompt,
-        )
-        for j, segment in enumerate(transcript.segments):
-            print(dict(segment))
-            segment.start += sumOfPrevChunkDurations
-            currentGroup.append(segment)
-            if j % 6 == 0:
-                startTime = currentGroup[0].start
-                text = " ".join([segment.text for segment in currentGroup])
-                grouped_segments.append(
-                    {
-                        "start": startTime,
-                        "text": text,
-                    }
+    
+    # Process chunks in parallel
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(
+                transcribe_chunk,
+                client,
+                chunk_filename,
+                i,
+                len(audio_chunks),
+                sumOfPrevChunkDurations
+            )
+            for i, chunk_filename in enumerate(audio_chunks)
+        ]
+        
+        # Collect results in order
+        results = []
+        for future in as_completed(futures):
+            results.append(future.result())
+        
+        # Sort results by chunk index to maintain original order
+        results.sort(key=lambda x: x["chunk_index"])
+        
+        # Process results in order
+        for result in results:
+            for segment in result["grouped_segments"]:
+                start_time = int(segment["start"])
+                markdown_transcript += (
+                    f"[{start_time}]({inputUrl}&t={int(start_time)}): {segment['text']}\n\n"
                 )
-                currentGroup = []
-        if currentGroup:
-            startTime = currentGroup[0].start
-            text = " ".join([segment.text for segment in currentGroup])
-            grouped_segments.append(
-                {
-                    "start": startTime,
-                    "text": text,
-                }
-            )
-        sumOfPrevChunkDurations += chunk_duration
-
-        for segment in grouped_segments:
-            start_time = int(segment["start"])
-            markdown_transcript += (
-                f"[{start_time}]({inputUrl}&t={int(start_time)}): {segment['text']}\n\n"
-            )
+            sumOfPrevChunkDurations += result["chunk_duration"]
 
     print("sumOfPrevChunkDurations", sumOfPrevChunkDurations)
 
