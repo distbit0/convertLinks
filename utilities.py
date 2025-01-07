@@ -90,7 +90,7 @@ def chunk_mp3(mp3_file):
 
     return file_paths
 
-
+### might be worthwhile to modify this so it includes timestamps in the output even if they are not clickable
 def transcribe_mp3(inputSource, inputUrl, audio_chunks):
     client = OpenAI()
     markdown_transcript = f"[Original]({inputUrl})\n\n"
