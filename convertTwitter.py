@@ -444,7 +444,7 @@ def convertTwitter(url, forceRefresh):
         highQuality = True
     else:
         return url
-    tweet_id = url.split("/")[-1].strip(".html").split("#")[0]
+    tweet_id = url.split("/")[-1].strip(".html").split("#")[0].split("?")[0]
     gistUrl = utilities.getGistUrl(tweet_id)
     if gistUrl and not forceRefresh:
         return gistUrl
