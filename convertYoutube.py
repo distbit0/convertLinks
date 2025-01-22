@@ -52,7 +52,9 @@ def download_youtube_video_as_mp3(url):
     return mp3_file, title
 
 
-def transcribe_chunk(client, chunk_filename, chunk_index, total_chunks, sum_of_prev_durations):
+def transcribe_chunk(
+    client, chunk_filename, chunk_index, total_chunks, sum_of_prev_durations
+):
     grouped_segments = []
     currentGroup = []
     print(f"transcribing chunk {chunk_index + 1} of {total_chunks}")
@@ -72,9 +74,8 @@ def transcribe_chunk(client, chunk_filename, chunk_index, total_chunks, sum_of_p
         timestamp_granularities=["segment"],
         prompt=prompt,
     )
-    
+
     for j, segment in enumerate(transcript.segments):
-        print(dict(segment))
         segment.start += sum_of_prev_durations
         currentGroup.append(segment)
         if j % 6 == 0:
@@ -86,13 +87,14 @@ def transcribe_chunk(client, chunk_filename, chunk_index, total_chunks, sum_of_p
         startTime = currentGroup[0].start
         text = " ".join([segment.text for segment in currentGroup])
         grouped_segments.append({"start": startTime, "text": text})
-    
+
     return {
         "filename": chunk_filename,
         "grouped_segments": grouped_segments,
         "chunk_duration": chunk_duration,
-        "chunk_index": chunk_index
+        "chunk_index": chunk_index,
     }
+
 
 def transcribeYt(inputSource, inputUrl, audio_chunks, title):
     client = OpenAI()
@@ -107,19 +109,19 @@ def transcribeYt(inputSource, inputUrl, audio_chunks, title):
                 chunk_filename,
                 i,
                 len(audio_chunks),
-                0  # Don't pass sumOfPrevChunkDurations here
+                0,  # Don't pass sumOfPrevChunkDurations here
             )
             for i, chunk_filename in enumerate(audio_chunks)
         ]
-        
+
         # Collect results in order
         results = []
         for future in as_completed(futures):
             results.append(future.result())
-        
+
         # Sort results by chunk index to maintain original order
         results.sort(key=lambda x: x["chunk_index"])
-        
+
         # Process results in order and accumulate durations
         sumOfPrevChunkDurations = 0
         for result in results:
@@ -127,9 +129,7 @@ def transcribeYt(inputSource, inputUrl, audio_chunks, title):
             for segment in result["grouped_segments"]:
                 segment["start"] += sumOfPrevChunkDurations
                 start_time = int(segment["start"])
-                markdown_transcript += (
-                    f"[{start_time}]({inputUrl}&t={int(start_time)}): {segment['text']}\n\n"
-                )
+                markdown_transcript += f"[{start_time}]({inputUrl}&t={int(start_time)}): {segment['text']}\n\n"
             sumOfPrevChunkDurations += result["chunk_duration"]
 
     print("sumOfPrevChunkDurations", sumOfPrevChunkDurations)
