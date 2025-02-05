@@ -50,6 +50,7 @@ def fetch_messages(channel_id, initial_message_id):
     while True:
         time.sleep(1.5)  # avoid rate limit
         params = {"limit": 100, "after": last_message_id}
+        print(params)
         response = requests.get(
             f"{base_url}/{channel_id}/messages", headers=headers, params=params
         )
@@ -58,6 +59,7 @@ def fetch_messages(channel_id, initial_message_id):
 
         modifiedMessages = []
         for message in messages:
+            print(message["id"])
             if "mentions" in message:
                 for mention in message["mentions"]:
                     id = mention["id"]
