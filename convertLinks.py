@@ -123,6 +123,7 @@ def open_in_browser(url):
 
 conversion_functions = {
     "/watch?": {"function": convertYoutube, "alwaysConvert": False},
+    "/live/": {"function": convertYoutube, "alwaysConvert": False},
     "warpcast.com": {"function": returnUnchanged, "alwaysConvert": False},
     ".mp4": {"function": convertMp4, "alwaysConvert": False},
     ".mp3": {"function": convertMp3, "alwaysConvert": False},

@@ -146,7 +146,10 @@ def convertYoutube(video_url, forceRefresh):
     if "streameth" in video_url:
         return
     inputSource = "YT video"
-    videoId = video_url.split("v=")[-1].split("&")[0]
+    if "/live/" in video_url:
+        videoId = video_url.split("/live/")[-1].split("?")[0]
+    else:
+        videoId = video_url.split("v=")[-1].split("&")[0]
     video_url = f"https://www.youtube.com/watch?v={videoId}"
     gistUrl = utilities.getGistUrl(videoId)
     if gistUrl and not forceRefresh:
