@@ -160,7 +160,7 @@ def convertGitbook(url, forceRefresh):
     if firstSentenceIndex > 0:
         markdown_content = markdown_content[firstSentenceIndex:]
     else:
-        print("could not find first sentence")
+        print("could not find first sentence for", url)
         return False
 
     lastModifiedIndex = getLastModifiedStringIndex(markdown_content)
