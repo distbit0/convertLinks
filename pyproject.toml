@@ -28,6 +28,8 @@ dependencies = [
     "soundcloud-lib>=0.6.1",
     "secretstorage>=3.3.3",
     "ipfs-cid>=1.0.0",
+    "httpx[http2]>=0.28.1",
+    "uncurl>=0.0.11",
 ]
 requires-python = ">=3.13"
 license = {text = "UNLICENCE"}
@@ -42,3 +44,8 @@ allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]

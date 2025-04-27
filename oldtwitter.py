@@ -1,4 +1,6 @@
+
 import traceback
+import urllib
 import re
 import time
 import pickle
@@ -9,85 +11,85 @@ import re
 from dotenv import load_dotenv
 import os
 import requests
+import xRequests
+import subprocess
+import shlex
 
 
 load_dotenv()
 
-csrf_token = os.getenv("TWITTER_CT0_TOKEN")
-bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
-xClientTxid = os.getenv("TWITTER_XCLIENTTXID")
-cookie = os.getenv("TWITTER_COOKIE")
-
 ignored_accounts = ["memdotai", "threadreaderapp"]
 
-features = '{"profile_label_improvements_pcf_account_label_enabled":false,"rweb_tipjar_consumption_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"creator_subscriptions_quote_tweet_preview_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}'
+# Functions to modify tweet and replies requests based on IDs
+
+def _sub(pattern: str, repl: str, text: str) -> str:
+    """
+    Small helper: regex-sub everywhere in *text*.
+    The patterns we use are look-behind / look-ahead anchored, so they never
+    disturb the surrounding JSON-or-URL noise.
+    """
+    return re.sub(pattern, repl, text, flags=re.DOTALL)
 
 
-headers = {
-    "accept": "*/*",
-    "accept-language": "en-GB,en;q=0.9",
-    "authorization": f"Bearer {bearer_token}",
-    "cache-control": "no-cache",
-    "content-type": "application/json",
-    "cookie": cookie,
-    "pragma": "no-cache",
-    "priority": "u=1, i",
-    "referer": "https://x.com/",
-    "sec-ch-ua": '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Linux"',
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
-    "sec-gpc": "1",
-    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "x-client-transaction-id": xClientTxid,
-    "x-client-uuid": "d8c95e47-29a5-4548-9cd4-b4a0db7afd05",
-    "x-csrf-token": csrf_token,
-    "x-twitter-active-user": "yes",
-    "x-twitter-auth-type": "OAuth2Session",
-    "x-twitter-client-language": "en",
-}
+def modify_tweet_request(request_str: str, tweet_id: str) -> str:
+    """
+    Replace every place where the focal tweet ID is embedded:
+      • the GraphQL variables block (focalTweetId) – URL-encoded JSON
+      • the Referer header               …/status/<id>
+    """
+    # 1) focalTweetId inside the variables query-param
+    out = _sub(r'(?<=focalTweetId%22%3A%22)\d+(?=%22)', tweet_id, request_str)
+    # 2) …/status/<id> in the Referer header
+    out = _sub(r'(?<=/status/)\d+', tweet_id, out)
+    return out
+
+
+def modify_replies_request(request_str, conversation_id, cursor=None, from_username=None):
+    # 1. locate and decode the variables= blob
+    m = re.search(r'variables=([^&\'\s]+)', request_str)
+    if not m:
+        raise ValueError("can't find variables=")
+    var_enc = m.group(1)
+    var_obj = json.loads(urllib.parse.unquote(var_enc))
+
+    # 2. mutate the dict
+    var_obj["rawQuery"] = f"conversation_id:{conversation_id}" + (
+        f" from:{from_username}" if from_username else ""
+    )
+    if cursor is None:
+        var_obj.pop("cursor", None)
+    else:
+        var_obj["cursor"] = cursor
+
+    # 3. re-encode and re-insert
+    new_enc = urllib.parse.quote(json.dumps(var_obj, separators=(',', ':')), safe='')
+    request_str = request_str.replace(var_enc, new_enc, 1)
+
+    # 4. also update the Referer header’s query string
+    ref_q = urllib.parse.quote(var_obj["rawQuery"], safe='')
+    request_str = re.sub(r'(?<=\?q=)[^&\'\s]+', ref_q, request_str)
+
+    return request_str
+
+
 
 
 def get_tweet_by_id(tweet_id):
-    base_url = "https://x.com/i/api/graphql/_8aYOgEDz35BrBcBal1-_w/TweetDetail"
-
-    # Request parameters
-    variables = {
-        "focalTweetId": tweet_id,
-        "with_rux_injections": True,
-        "rankingMode": "Relevance",
-        "includePromotedContent": True,
-        "withCommunity": True,
-        "withQuickPromoteEligibilityTweetFields": True,
-        "withBirdwatchNotes": True,
-        "withVoice": True,
-    }
-
-    field_toggles = {
-        "withArticleRichContentState": True,
-        "withArticlePlainText": False,
-        "withGrokAnalyze": False,
-        "withDisallowedReplyControls": False,
-    }
-
-    # URL parameters
-    params = {
-        "variables": json.dumps(variables),
-        "features": features,
-        "fieldToggles": json.dumps(field_toggles),
-    }
-
+    curlString = modify_tweet_request(xRequests.tweetRequest, tweet_id)
+    
     try:
-        # Make the request
-        response = requests.get(base_url, params=params, headers=headers)
-        print(f"Response: {response.text}")
-        response.raise_for_status()  # Raise exception for bad status codes
-        response_data = response.json()
+        # Execute curl command directly using subprocess
+        args = shlex.split(curlString)   # turns the full command into a list
+        result = subprocess.run(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        data = json.loads(result.stdout)
 
         try:
-            entries = response_data["data"]["threaded_conversation_with_injections_v2"][
+            entries = data["data"]["threaded_conversation_with_injections_v2"][
                 "instructions"
             ][0]["entries"]
         except (KeyError, IndexError):
@@ -135,6 +137,8 @@ def get_tweet_by_id(tweet_id):
         return None
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON response: {e}")
+        print("Output: ", result.stdout)
+        print("Curl command: ", curlString)
         return None
 
 
@@ -187,103 +191,139 @@ def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
 
 
 def getReplies(
-    conversation_id, onlyOp=False, max_retries=10, retry_delay=180
+    conversation_id, onlyOp=False, max_retries=10, retry_delay=4
 ):  # 180 seconds = 3 minutes
     print(conversation_id)
     mainTweet = get_tweet_by_id(conversation_id)
-    opUsername = mainTweet["core"]["user_results"]["result"]["legacy"]["screen_name"]
     if not mainTweet:
-        print("Main tweet not found.")
-        return None
-    if onlyOp:
-        query = f"conversation_id:{conversation_id} from:{opUsername}"
+        print(f"Main tweet not found: {conversation_id}")
+        return []
+    opUsername = mainTweet["core"]["user_results"]["result"]["legacy"]["screen_name"]
     # elif highQuality:
     #     query = f"conversation_id:{conversation_id} min_faves:2" # this is actually bad as a single reply in a convo with <2 likes will cut off rest of convo
-    else:
-        query = f"conversation_id:{conversation_id}"
-
-    url = "https://x.com/i/api/graphql/MJuDXJXZ8bB--c9Ujhy-0g/SearchTimeline"
-    print("query", query)
 
     all_tweets = [mainTweet]
     cursor = None
 
+    attempts = 0
     while True:
-        variables = {
-            "rawQuery": query,
-            "count": 20,
-            "querySource": "typed_query",
-            "product": "Latest",
-        }
-        if cursor:
-            variables["cursor"] = cursor
-
-        params = {"variables": json.dumps(variables), "features": features}
-
-        retry_count = 0
-        while retry_count < max_retries:
-            try:
-                response = requests.get(url, params=params, headers=headers)
-                response.raise_for_status()
-                data = response.json()
-                break  # If successful, break out of the retry loop
-            except (requests.RequestException, json.JSONDecodeError) as e:
-                retry_count += 1
-                if retry_count == max_retries:
-                    print(f"Failed after {max_retries} attempts: {e}")
-                    return all_tweets
-                print(f"Attempt {retry_count} failed: {e}")
-                print(f"Waiting {retry_delay} seconds before retrying...")
-                time.sleep(retry_delay)
-
-        instructions = (
-            data.get("data", {})
-            .get("search_by_raw_query", {})
-            .get("search_timeline", {})
-            .get("timeline", {})
-            .get("instructions", [])
+        curlString = modify_replies_request(
+            xRequests.repliesRequest, conversation_id, cursor, from_username=onlyOp and opUsername
         )
-        if not instructions:
-            print("No instructions found in response.")
-            break
+        
+        # Make the request using curl directly
+        try:
+            # Execute curl command directly using subprocess
+            args = shlex.split(curlString)   # turns the full command into a list
+            result = subprocess.run(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Check for process execution errors
+            if result.returncode != 0:
+                if attempts > max_retries:
+                    print(f"Maximum retries reached ({max_retries})")
+                    print(f"Last error: Curl command failed: {result.stderr}")
+                    return []
+                else:
+                    print(f"Curl command failed: {result.stderr}. Retrying in {retry_delay} seconds")
+                    time.sleep(retry_delay)
+                    attempts += 1
+                    continue
+                    
+            # Parse the JSON response from curl output
+            try:
+                response_data = json.loads(result.stdout)
+                
+                # Check response for potential rate limiting indicators in the parsed data
+                # Note: We need to check the response content since we won't have status codes directly
+                if "errors" in response_data and any("rate limit" in str(error).lower() for error in response_data["errors"]):
+                    if attempts > max_retries:
+                        print(f"Maximum retries reached ({max_retries})")
+                        print(f"Last error: Rate limit exceeded")
+                        return []
+                    else:
+                        sleep_time = retry_delay + (30 * attempts)
+                        print(f"Rate limit hit. Waiting {sleep_time} seconds")
+                        time.sleep(sleep_time)
+                        attempts += 1
+                        continue
+            except json.JSONDecodeError as e:
+                print(f"Error parsing JSON response: {e}")
+                print("Output: ", result.stdout)
+                print("Curl command: ", curlString)
+                if attempts > max_retries:
+                    return []
+                else:
+                    print(f"Retrying in 1 seconds")
+                    time.sleep(1)
+                    continue
+            else:
+                attempts = 0
+                
+            instructions = (
+                response_data.get("data", {})
+                .get("search_by_raw_query", {})
+                .get("search_timeline", {})
+                .get("timeline", {})
+                .get("instructions", [])
+            )
+            if not instructions:
+                print("No instructions found in response.")
+                break
 
-        bottom_cursor = None
-        newtweets = 0
-        for instruction in instructions:
-            entries = instruction.get("entries", []) or [instruction.get("entry", {})]
-            for entry in entries:
-                content = entry.get("content", {})
-                item_content = content.get("itemContent", {})
-                tweet = item_content.get("tweet_results", {}).get("result")
-                if (
-                    tweet
-                    and "rest_id" in tweet
-                    and tweet["rest_id"]
-                    not in [tweet["rest_id"] for tweet in all_tweets]
-                ):
-                    all_tweets.append(tweet)
-                    newtweets += 1
-                if "cursor-bottom" in entry.get(
-                    "entryId", ""
-                ) or "cursor-bottom" in entry.get("entry_id_to_replace", ""):
-                    bottom_cursor = entry.get("content", {}).get("value")
-        if bottom_cursor and newtweets > 0:
-            cursor = bottom_cursor
-            print(f"Fetching next page with cursor: {cursor}, newtweets: {newtweets}")
-            time.sleep(1)  # Respect rate limits
-        elif newtweets == 0:
-            print("no new tweets. New cursor:", cursor)
-            # with open("tmp/noNewTweets.json", "w") as f:
-            #     f.write(json.dumps(data, indent=4))
-            break
+            bottom_cursor = None
+            newtweets = 0
+            for instruction in instructions:
+                entries = instruction.get("entries", []) or [instruction.get("entry", {})]
+                for entry in entries:
+                    content = entry.get("content", {})
+                    item_content = content.get("itemContent", {})
+                    tweet = item_content.get("tweet_results", {}).get("result")
+                    if (
+                        tweet
+                        and "rest_id" in tweet
+                        and tweet["rest_id"]
+                        not in [tweet["rest_id"] for tweet in all_tweets]
+                    ):
+                        all_tweets.append(tweet)
+                        newtweets += 1
+                    if "cursor-bottom" in entry.get(
+                        "entryId", ""
+                    ) or "cursor-bottom" in entry.get("entry_id_to_replace", ""):
+                        bottom_cursor = entry.get("content", {}).get("value")
+            if bottom_cursor and newtweets > 0:
+                cursor = bottom_cursor
+                print(f"Fetching next page with cursor: {cursor}, newtweets: {newtweets}")
+                time.sleep(1)  # Respect rate limits
+            elif newtweets == 0:
+                print("no new tweets. New cursor:", cursor)
+                break
+            else:
+                print(f"no new cursor, {newtweets} new tweets")
+                break
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            if attempts > max_retries:
+                print(f"Maximum retries reached ({max_retries})")
+                return []
+            else:
+                print(f"Retrying in {retry_delay} seconds")
+                time.sleep(retry_delay)
+                attempts += 1
+                continue
         else:
-            print(f"no new cursor, {newtweets} new tweets")
-            break
+            attempts = 0
 
     return all_tweets
 
 
 def parseReplies(rawReplies, opUsername, highQuality):
+    if not rawReplies:
+        return {}
     replies_dict = {}
     for reply in rawReplies:
         if (
@@ -519,6 +559,8 @@ def convertTwitter(url, forceRefresh):
     if gistUrl and not forceRefresh:
         return gistUrl
     rawReplies = getReplies(tweet_id, onlyOp)
+    if not rawReplies:
+        return url
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))
     # rawReplies = pickle.load(open("tmp/rawReplies.pickle", "rb"))
     op_username = rawReplies[0]["core"]["user_results"]["result"]["legacy"][
