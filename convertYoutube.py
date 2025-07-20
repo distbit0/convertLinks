@@ -8,8 +8,29 @@ import utilities
 from dotenv import load_dotenv
 import pysnooper
 import json
+import re
+import requests
+from bs4 import BeautifulSoup
 
 load_dotenv()
+
+
+def getTitle(videoId):
+
+    url = f"https://www.youtube.com/watch?v={videoId}"
+
+    # Extracting HTML Code of the Video Page:
+    response = requests.get(url)
+    html_content = response.text
+
+    # Processing the HTML Code with BeautifulSoup
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    # Extracting <title> tag's content
+    title_tag = soup.find("meta", property="og:title")
+    video_title = title_tag["content"] if title_tag else "Title not found"
+
+    return video_title
 
 
 def convertYoutube(video_url, forceRefresh):
@@ -20,6 +41,7 @@ def convertYoutube(video_url, forceRefresh):
         videoId = video_url.split("/live/")[-1].split("?")[0]
     else:
         videoId = video_url.split("v=")[-1].split("&")[0]
+    videoId = videoId.split("#")[0]
     video_url = f"https://www.youtube.com/watch?v={videoId}"
     gistUrl = utilities.getGistUrl(videoId)
     if gistUrl and not forceRefresh:
@@ -65,11 +87,11 @@ def convertYoutube(video_url, forceRefresh):
         markdown_transcript += (
             f"[{group_start_time}]({video_url}&t={group_start_time}): {text}\n\n"
         )
-    title = (
-        transcript_list._manually_created_transcripts[0].title
-        if transcript_list._manually_created_transcripts
-        else inputSource
-    )
+    try:
+        title = getTitle(videoId)
+    except Exception as e:
+        logger.error(f"Failed to get title for video {videoId}: {e}")
+        title = "Title not found"
     gist_url = utilities.writeGist(
         markdown_transcript, f"{inputSource}: " + title, videoId, update=True
     )
