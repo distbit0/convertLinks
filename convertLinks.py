@@ -54,7 +54,8 @@ def find_urls_in_text(text):
     url_pattern = re.compile(
         r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?:#*[a-zA-Z0-9-_\.]*)?"
     )
-    return [url.strip(")") for url in url_pattern.findall(text)]
+    # i previously removed .strip(")") from the below which I for some reason previously thought was necessary but not sure why... it was removing the trailing ) from e.g. wikipedia page urls hence causing issues
+    return [url.strip("") for url in url_pattern.findall(text)]
 
 
 def convertGDocs(url, forceRefresh):
