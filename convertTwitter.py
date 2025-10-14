@@ -115,9 +115,14 @@ TWEET_DETAIL_FEATURES: Dict[str, bool] = {
 
 TWEET_DETAIL_FIELD_TOGGLES: Dict[str, bool] = {
     "withArticleRichContentState": True,
-    "withArticlePlainText": False,
+    "withArticlePlainText": True,
     "withGrokAnalyze": False,
     "withDisallowedReplyControls": False,
+}
+
+TWEET_RESULT_FIELD_TOGGLES: Dict[str, bool] = {
+    "withArticleRichContentState": True,
+    "withArticlePlainText": True,
 }
 
 
@@ -256,66 +261,195 @@ def _get_user_screen_name(tweet: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _extract_tweets_from_structure(node: Any, visited: Optional[set] = None) -> List[Dict[str, Any]]:
+CursorType = Optional[str]
+
+
+def _extract_note_text(tweet: Dict[str, Any]) -> Optional[str]:
+    note_tweet = tweet.get("note_tweet")
+    if not isinstance(note_tweet, dict):
+        return None
+    note_results = note_tweet.get("note_tweet_results")
+    if not isinstance(note_results, dict):
+        return None
+    note_result = note_results.get("result")
+    if not isinstance(note_result, dict):
+        return None
+    note_text = note_result.get("text")
+    return note_text if isinstance(note_text, str) and note_text.strip() else None
+
+
+def _extract_article_metadata(tweet: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    article_container = tweet.get("article")
+    if not isinstance(article_container, dict):
+        return None
+    article_results = article_container.get("article_results")
+    if not isinstance(article_results, dict):
+        return None
+    article = article_results.get("result")
+    if not isinstance(article, dict):
+        return None
+
+    title = article.get("title")
+    plain_text = article.get("plain_text")
+    if title is not None and not isinstance(title, str):
+        title = None
+    if plain_text is not None and not isinstance(plain_text, str):
+        plain_text = None
+
+    legacy = tweet.get("legacy", {})
+    article_url: Optional[str] = None
+    if isinstance(legacy, dict):
+        entities = legacy.get("entities", {})
+        if isinstance(entities, dict):
+            for url_entry in entities.get("urls", []):
+                if not isinstance(url_entry, dict):
+                    continue
+                expanded = url_entry.get("expanded_url")
+                if isinstance(expanded, str) and "/i/article/" in expanded:
+                    article_url = expanded
+                    break
+
+    media_urls: List[str] = []
+    cover_media = article.get("cover_media")
+    if isinstance(cover_media, dict):
+        media_info = cover_media.get("media_info")
+        if isinstance(media_info, dict):
+            cover_url = media_info.get("original_img_url")
+            if isinstance(cover_url, str) and cover_url:
+                media_urls.append(cover_url)
+
+    for media_entity in article.get("media_entities", []):
+        if not isinstance(media_entity, dict):
+            continue
+        media_info = media_entity.get("media_info")
+        if not isinstance(media_info, dict):
+            continue
+        original_url = media_info.get("original_img_url")
+        if isinstance(original_url, str) and original_url and original_url not in media_urls:
+            media_urls.append(original_url)
+
+    if not any([title, plain_text, article_url]):
+        return None
+
+    return {
+        "title": title.strip() if isinstance(title, str) else None,
+        "plain_text": plain_text.strip() if isinstance(plain_text, str) else None,
+        "url": article_url.strip() if isinstance(article_url, str) else None,
+        "media_urls": media_urls,
+    }
+
+
+def _collect_media_urls(tweet: Dict[str, Any], article: Optional[Dict[str, Any]]) -> List[str]:
+    urls: List[str] = []
+    if article:
+        for media_url in article.get("media_urls", []) or []:
+            if isinstance(media_url, str) and media_url and media_url not in urls:
+                urls.append(media_url)
+
+    legacy = tweet.get("legacy")
+    if isinstance(legacy, dict):
+        extended_entities = legacy.get("extended_entities", {})
+        if isinstance(extended_entities, dict):
+            for media in extended_entities.get("media", []):
+                if not isinstance(media, dict):
+                    continue
+                media_url = media.get("media_url_https") or media.get("media_url")
+                if isinstance(media_url, str) and media_url and media_url not in urls:
+                    urls.append(media_url)
+    return urls
+
+
+def _format_article_text(article: Dict[str, Any]) -> Optional[str]:
+    if not article:
+        return None
+    segments: List[str] = []
+    title = article.get("title")
+    plain_text = article.get("plain_text")
+    article_url = article.get("url")
+
+    if isinstance(title, str) and title.strip():
+        segments.append(title.strip())
+    if isinstance(plain_text, str) and plain_text.strip():
+        segments.append(plain_text.strip())
+    if isinstance(article_url, str) and article_url.strip():
+        segments.append(article_url.strip())
+
+    if not segments:
+        return None
+    return "\n\n".join(segments)
+
+
+def _extract_tweets_and_cursors(
+    node: Any, visited: Optional[set[int]] = None
+) -> Tuple[List[Dict[str, Any]], List[Tuple[CursorType, str]]]:
     if visited is None:
         visited = set()
     tweets: List[Dict[str, Any]] = []
-    if not isinstance(node, dict):
-        return tweets
-    node_id = id(node)
-    if node_id in visited:
-        return tweets
-    visited.add(node_id)
+    cursors: List[Tuple[CursorType, str]] = []
 
-    tweet_results = node.get("tweet_results")
-    if isinstance(tweet_results, dict):
-        tweet = _coerce_tweet(tweet_results.get("result"))
-        if tweet:
-            tweets.append(tweet)
+    def _walk(current: Any) -> None:
+        if isinstance(current, dict):
+            obj_id = id(current)
+            if obj_id in visited:
+                return
+            visited.add(obj_id)
 
-    # Nested data
-    if "tweet" in node and isinstance(node["tweet"], dict):
-        tweets.extend(_extract_tweets_from_structure(node["tweet"], visited))
+            tweet_results = current.get("tweet_results")
+            if isinstance(tweet_results, dict):
+                tweet = _coerce_tweet(tweet_results.get("result"))
+                if tweet:
+                    tweets.append(tweet)
 
-    for key in ("itemContent", "content", "item"):
-        if key in node and isinstance(node[key], dict):
-            tweets.extend(_extract_tweets_from_structure(node[key], visited))
+            value = current.get("value")
+            cursor_type = current.get("cursorType") or current.get("cursor_type")
+            if isinstance(value, str) and value:
+                cursor_label: CursorType = (
+                    cursor_type.lower() if isinstance(cursor_type, str) else None
+                )
+                if cursor_label is None:
+                    entry_id = (
+                        current.get("entryId")
+                        or current.get("entry_id")
+                        or current.get("entry_id_to_replace")
+                    )
+                    if isinstance(entry_id, str):
+                        entry_id_lower = entry_id.lower()
+                        if "cursor-bottom" in entry_id_lower:
+                            cursor_label = "bottom"
+                        elif "cursor-top" in entry_id_lower:
+                            cursor_label = "top"
+                if cursor_label is not None:
+                    cursors.append((cursor_label, value))
 
-    if "items" in node and isinstance(node["items"], list):
-        for item in node["items"]:
-            tweets.extend(_extract_tweets_from_structure(item, visited))
+            for child in current.values():
+                _walk(child)
+        elif isinstance(current, list):
+            for item in current:
+                _walk(item)
 
-    return tweets
+    _walk(node)
+    return tweets, cursors
 
 
 def _parse_tweet_detail_response(
-    data: Dict[str, Any]
-) -> Tuple[List[Dict[str, Any]], List[Tuple[str, str]]]:
+    data: Dict[str, Any],
+) -> Tuple[List[Dict[str, Any]], List[Tuple[CursorType, str]]]:
     instructions = (
         data.get("data", {})
         .get("threaded_conversation_with_injections_v2", {})
         .get("instructions", [])
     )
     tweets: List[Dict[str, Any]] = []
-    cursors: List[tuple[str, str]] = []
+    cursors: List[Tuple[CursorType, str]] = []
+    visited: set[int] = set()
     for instruction in instructions:
-        entries = instruction.get("entries")
-        if not entries and instruction.get("entry"):
-            entries = [instruction["entry"]]
-        if not entries:
-            continue
-        for entry in entries:
-            content = entry.get("content") or {}
-            entry_id = entry.get("entryId") or entry.get("entry_id") or ""
-            tweets.extend(_extract_tweets_from_structure(content))
-            cursor_value = content.get("value")
-            if cursor_value:
-                cursor_type = content.get("cursorType")
-                entry_id_lower = entry_id.lower()
-                if cursor_type == "Bottom" or "cursor-bottom" in entry_id_lower:
-                    cursors.append(("bottom", cursor_value))
-                elif cursor_type == "Top" or "cursor-top" in entry_id_lower:
-                    cursors.append(("top", cursor_value))
+        extracted_tweets, extracted_cursors = _extract_tweets_and_cursors(
+            instruction, visited
+        )
+        if extracted_tweets:
+            tweets.extend(extracted_tweets)
+        if extracted_cursors:
+            cursors.extend(extracted_cursors)
     return tweets, cursors
 
 
@@ -330,12 +464,9 @@ def fetch_tweet_by_rest_id(tweet_id: str) -> Optional[Dict[str, Any]]:
             "withVoice": False,
         },
         TWEET_RESULT_FEATURES,
+        TWEET_RESULT_FIELD_TOGGLES,
     )
-    result = (
-        data.get("data", {})
-        .get("tweetResult", {})
-        .get("result")
-    )
+    result = data.get("data", {}).get("tweetResult", {}).get("result")
     tweet = _coerce_tweet(result)
     if tweet:
         logger.debug(f"Fetched primary tweet {tweet_id} via TweetResultByRestId")
@@ -366,17 +497,14 @@ def fetch_tweet_detail(tweet_id: str, cursor: Optional[str] = None) -> Dict[str,
 def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
     screen_name = _get_user_screen_name(tweet)
     op_username_lower = (opUsername or "").lower()
-    image_url = ""
-    if (
-        "extended_entities" in tweet["legacy"]
-        and "media" in tweet["legacy"]["extended_entities"]
-    ):
-        media = tweet["legacy"]["extended_entities"]["media"]
-        if len(media) > 0 and "media_url_https" in media[0]:
-            image_url = media[0]["media_url_https"]
-    tweet["legacy"]["full_text"] = tweet["legacy"]["full_text"].replace(
-        image_url, ""
-    )  ##so images not counted as links
+    article_metadata = _extract_article_metadata(tweet)
+    media_urls = _collect_media_urls(tweet, article_metadata)
+    legacy = tweet.get("legacy", {})
+    if isinstance(legacy, dict) and isinstance(legacy.get("full_text"), str):
+        full_text = legacy["full_text"]
+        for media_url in media_urls:
+            full_text = full_text.replace(media_url, "")
+        tweet["legacy"]["full_text"] = full_text  # so images not counted as links
     noReplies = (
         len(
             [
@@ -482,10 +610,7 @@ def getReplies(
         op_tweets = [
             tweet
             for tweet in tweets
-            if (
-                (_get_user_screen_name(tweet) or "").lower().strip()
-                == op_username
-            )
+            if ((_get_user_screen_name(tweet) or "").lower().strip() == op_username)
         ]
         logger.info(
             f"Filtered thread to {len(op_tweets)} tweet(s) from OP {op_username}"
@@ -515,33 +640,35 @@ def parseReplies(rawReplies, opUsername, highQuality):
             continue
 
         onlyTagsSoFar = True
-        contentWords = []
-        full_text = reply["legacy"].get("full_text")
-        if "note_tweet" in reply:
-            full_text = (
-                reply.get("note_tweet")
-                .get("note_tweet_results")
-                .get("result")
-                .get("text")
-            )
-        if not full_text:
-            continue
+        contentWords: List[str] = []
+        article_metadata = _extract_article_metadata(reply)
+        article_text = _format_article_text(article_metadata) if article_metadata else None
 
-        for word in full_text.split(" "):
-            if "@" in word:
-                if onlyTagsSoFar:
-                    continue
-            else:
-                onlyTagsSoFar = False
-            contentWords.append(word)
+        if article_text:
+            text_body = article_text
+            onlyTagsSoFar = False
+        else:
+            legacy = reply.get("legacy")
+            full_text = None
+            if isinstance(legacy, dict):
+                full_text = legacy.get("full_text")
+            note_text = _extract_note_text(reply)
+            if note_text:
+                full_text = note_text
+            if not full_text:
+                continue
 
-        text = " ".join(contentWords)
-        text = (
-            "{"
-            + screen_name
-            + "} "
-            + text
-        )
+            for word in full_text.split(" "):
+                if "@" in word:
+                    if onlyTagsSoFar:
+                        continue
+                else:
+                    onlyTagsSoFar = False
+                contentWords.append(word)
+
+            text_body = " ".join(contentWords)
+
+        text = f"{{{screen_name}}} {text_body}".strip()
 
         # Handle quoted tweets
         if (
@@ -559,20 +686,12 @@ def parseReplies(rawReplies, opUsername, highQuality):
                 text += " {RT'd tweet} " + retweeted_tweet["legacy"]["full_text"]
 
         tweetUrl = (
-            "https://twitter.com/"
-            + screen_name
-            + "/status/"
-            + str(reply["rest_id"])
+            "https://twitter.com/" + screen_name + "/status/" + str(reply["rest_id"])
         )
 
-        image_url = ""
-        if (
-            "extended_entities" in reply["legacy"]
-            and "media" in reply["legacy"]["extended_entities"]
-        ):
-            media = reply["legacy"]["extended_entities"]["media"]
-            if len(media) > 0 and "media_url_https" in media[0]:
-                image_url = media[0]["media_url_https"]
+        media_urls = _collect_media_urls(reply, article_metadata)
+        image_url = media_urls[0] if media_urls else ""
+        extra_media = media_urls[1:] if len(media_urls) > 1 else []
 
         if reply["rest_id"] in replies_dict:
             replies_dict[reply["rest_id"]]["text"] = text
@@ -584,12 +703,14 @@ def parseReplies(rawReplies, opUsername, highQuality):
             replies_dict[reply["rest_id"]]["retweets"] = reply["legacy"].get(
                 "retweet_count", 0
             )
+            replies_dict[reply["rest_id"]]["gallery"] = extra_media
         else:
             replies_dict[reply["rest_id"]] = {
                 "text": text,
                 "children": [],
                 "link": tweetUrl,
                 "image_url": image_url,
+                "gallery": extra_media,
                 "likes": reply["legacy"].get("favorite_count", 0),
                 "retweets": reply["legacy"].get("retweet_count", 0),
             }
@@ -607,6 +728,7 @@ def parseReplies(rawReplies, opUsername, highQuality):
                     "children": [reply["rest_id"]],
                     "link": "",
                     "image_url": "",
+                    "gallery": [],
                     "likes": 0,
                     "retweets": 0,
                 }
@@ -679,11 +801,20 @@ def json_to_html(json_data, topTweet, op_username):
             "\n", "<br>"
         )
 
-        if tweet["image_url"]:
-            if "mp4" in tweet["image_url"]:
-                tweetText += '<a href="' + tweet["image_url"] + '">[Video]</a>'
+        media_urls = []
+        if tweet.get("image_url"):
+            media_urls.append(tweet["image_url"])
+        media_urls.extend(tweet.get("gallery", []))
+
+        seen_media: set[str] = set()
+        for media_url in media_urls:
+            if not media_url or media_url in seen_media:
+                continue
+            seen_media.add(media_url)
+            if "mp4" in media_url:
+                tweetText += f'<a href="{media_url}">[Video]</a>'
             else:
-                tweetText += f'<br><img src="{tweet["image_url"]}">'
+                tweetText += f'<br><img src="{media_url}">'  # noqa: S105
 
         outStr = (
             f"{indent}<br><details open><summary>{level+1}. {tweetText}</summary><br>\n"
@@ -776,3 +907,5 @@ if __name__ == "__main__":
         )
     )
     # print(json.dumps(get_tweet_by_id("1858629520871375295"), indent=4))
+
+# "https://x.com/jon_charb/status/1977811956498370984###convo",

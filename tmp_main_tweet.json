@@ -1,0 +1,206 @@
+{
+  "__typename": "Tweet",
+  "rest_id": "1978115526145564815",
+  "core": {
+    "user_results": {
+      "result": {
+        "__typename": "User",
+        "id": "VXNlcjo3NzI2NDUzNDA5MzU4NDc5MzY=",
+        "rest_id": "772645340935847936",
+        "affiliates_highlighted_label": {},
+        "avatar": {
+          "image_url": "https://pbs.twimg.com/profile_images/1931802330803867648/qSBPKYnX_normal.jpg"
+        },
+        "core": {
+          "created_at": "Mon Sep 05 03:59:39 +0000 2016",
+          "name": "Good",
+          "screen_name": "gdkairos"
+        },
+        "dm_permissions": {
+          "can_dm": true
+        },
+        "has_graduated_access": true,
+        "is_blue_verified": true,
+        "legacy": {
+          "default_profile": true,
+          "default_profile_image": false,
+          "description": "being early here = asymmetric upside. chief prediction advisor @BRKTgg",
+          "entities": {
+            "description": {
+              "urls": []
+            }
+          },
+          "fast_followers_count": 0,
+          "favourites_count": 87677,
+          "followers_count": 99957,
+          "friends_count": 3007,
+          "has_custom_timelines": false,
+          "is_translator": false,
+          "listed_count": 440,
+          "media_count": 738,
+          "normal_followers_count": 99957,
+          "pinned_tweet_ids_str": [
+            "1977817337727168677"
+          ],
+          "possibly_sensitive": false,
+          "profile_banner_url": "https://pbs.twimg.com/profile_banners/772645340935847936/1757680869",
+          "profile_interstitial_type": "",
+          "statuses_count": 44008,
+          "translator_type": "none",
+          "want_retweets": false,
+          "withheld_in_countries": []
+        },
+        "location": {
+          "location": ""
+        },
+        "media_permissions": {
+          "can_media_tag": false
+        },
+        "parody_commentary_fan_label": "None",
+        "profile_image_shape": "Circle",
+        "professional": {
+          "rest_id": "1496902138659852290",
+          "professional_type": "Creator",
+          "category": []
+        },
+        "privacy": {
+          "protected": false
+        },
+        "relationship_perspectives": {
+          "following": false
+        },
+        "tipjar_settings": {},
+        "verification": {
+          "verified": false
+        }
+      }
+    }
+  },
+  "unmention_data": {},
+  "edit_control": {
+    "edit_tweet_ids": [
+      "1978115526145564815"
+    ],
+    "editable_until_msecs": "1760458067000",
+    "is_edit_eligible": false,
+    "edits_remaining": "5"
+  },
+  "is_translatable": false,
+  "views": {
+    "count": "1784",
+    "state": "EnabledWithCount"
+  },
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "article": {
+    "article_results": {
+      "result": {
+        "rest_id": "1978106397439979520",
+        "id": "QXJ0aWNsZUVudGl0eToxOTc4MTA2Mzk3NDM5OTc5NTIw",
+        "title": "Prediction Markets + Governance = Futardio.",
+        "preview_text": "Futarchy is not just another governance model. It\u2019s a bet that markets can make better decisions than people.\nFor years, DAOs have been trying to govern by democracy with token votes, delegate",
+        "cover_media": {
+          "id": "QXBpTWVkaWE6DAAFCgABG3OlbvEXIAAKAAIKuPzYC9eAAAAA",
+          "media_key": "3_1978106557255589888",
+          "media_id": "1978106557255589888",
+          "media_info": {
+            "__typename": "ApiImage",
+            "original_img_height": 819,
+            "original_img_width": 2048,
+            "original_img_url": "https://pbs.twimg.com/media/G3OlbvEXIAA-k7e.jpg",
+            "color_info": {
+              "palette": [
+                {
+                  "percentage": 44.1,
+                  "rgb": {
+                    "blue": 18,
+                    "green": 23,
+                    "red": 49
+                  }
+                },
+                {
+                  "percentage": 19.26,
+                  "rgb": {
+                    "blue": 26,
+                    "green": 45,
+                    "red": 107
+                  }
+                },
+                {
+                  "percentage": 7.51,
+                  "rgb": {
+                    "blue": 55,
+                    "green": 175,
+                    "red": 251
+                  }
+                },
+                {
+                  "percentage": 7.35,
+                  "rgb": {
+                    "blue": 35,
+                    "green": 106,
+                    "red": 228
+                  }
+                },
+                {
+                  "percentage": 3.83,
+                  "rgb": {
+                    "blue": 203,
+                    "green": 224,
+                    "red": 253
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "lifecycle_state": {
+          "modified_at_secs": 1760454467
+        },
+        "metadata": {
+          "first_published_at_secs": 1760454467
+        }
+      }
+    }
+  },
+  "grok_analysis_button": true,
+  "legacy": {
+    "bookmark_count": 20,
+    "bookmarked": false,
+    "created_at": "Tue Oct 14 15:07:47 +0000 2025",
+    "conversation_id_str": "1978115526145564815",
+    "display_text_range": [
+      0,
+      23
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "timestamps": [],
+      "urls": [
+        {
+          "display_url": "x.com/i/article/1978\u2026",
+          "expanded_url": "http://x.com/i/article/1978106397439979520",
+          "url": "https://t.co/filES6P9eN",
+          "indices": [
+            0,
+            23
+          ]
+        }
+      ],
+      "user_mentions": []
+    },
+    "favorite_count": 47,
+    "favorited": false,
+    "full_text": "https://t.co/filES6P9eN",
+    "is_quote_status": false,
+    "lang": "zxx",
+    "possibly_sensitive": false,
+    "possibly_sensitive_editable": true,
+    "quote_count": 2,
+    "reply_count": 10,
+    "retweet_count": 1,
+    "retweeted": false,
+    "user_id_str": "772645340935847936",
+    "id_str": "1978115526145564815"
+  }
+}
