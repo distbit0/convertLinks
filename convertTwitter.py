@@ -53,7 +53,7 @@ TWEET_RESULT_FEATURES: Dict[str, bool] = {
     "responsive_web_grok_share_attachment_enabled": True,
     "articles_preview_enabled": True,
     "responsive_web_edit_tweet_api_enabled": True,
-    "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
+    "graphql_is_translatable_rweb_tweet_is_translatable_enabled": False,
     "view_counts_everywhere_api_enabled": True,
     "longform_notetweets_consumption_enabled": True,
     "responsive_web_twitter_article_tweet_consumption_enabled": True,
@@ -95,7 +95,7 @@ TWEET_DETAIL_FEATURES: Dict[str, bool] = {
     "responsive_web_grok_share_attachment_enabled": True,
     "articles_preview_enabled": True,
     "responsive_web_edit_tweet_api_enabled": True,
-    "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
+    "graphql_is_translatable_rweb_tweet_is_translatable_enabled": False,
     "view_counts_everywhere_api_enabled": True,
     "longform_notetweets_consumption_enabled": True,
     "responsive_web_twitter_article_tweet_consumption_enabled": True,
@@ -202,16 +202,14 @@ def _twitter_graphql_request(
 
     if response.status_code in (401, 403):
         logger.error(
-            "Twitter authentication failed with status %s: %.200s",
-            response.status_code,
-            response.text,
+            f"Twitter authentication failed with status {response.status_code}: "
+            f"{response.text[:200]}"
         )
         raise TwitterAuthError("Twitter authentication failed. Refresh credentials.")
     if response.status_code >= 400:
         logger.error(
-            "Twitter GraphQL returned status %s: %.200s",
-            response.status_code,
-            response.text,
+            f"Twitter GraphQL returned status {response.status_code}: "
+            f"{response.text[:200]}"
         )
         raise TwitterGraphQLError(
             f"Twitter GraphQL returned status {response.status_code}"
@@ -224,7 +222,7 @@ def _twitter_graphql_request(
         raise TwitterGraphQLError("Twitter GraphQL returned invalid JSON") from exc
 
     if data.get("errors"):
-        logger.error("Twitter GraphQL errors: %s", data["errors"])
+        logger.error(f"Twitter GraphQL errors: {data['errors']}")
         raise TwitterGraphQLError("Twitter GraphQL returned errors")
 
     return data
@@ -325,7 +323,11 @@ def _extract_article_metadata(tweet: Dict[str, Any]) -> Optional[Dict[str, Any]]
         if not isinstance(media_info, dict):
             continue
         original_url = media_info.get("original_img_url")
-        if isinstance(original_url, str) and original_url and original_url not in media_urls:
+        if (
+            isinstance(original_url, str)
+            and original_url
+            and original_url not in media_urls
+        ):
             media_urls.append(original_url)
 
     if not any([title, plain_text, article_url]):
@@ -339,7 +341,9 @@ def _extract_article_metadata(tweet: Dict[str, Any]) -> Optional[Dict[str, Any]]
     }
 
 
-def _collect_media_urls(tweet: Dict[str, Any], article: Optional[Dict[str, Any]]) -> List[str]:
+def _collect_media_urls(
+    tweet: Dict[str, Any], article: Optional[Dict[str, Any]]
+) -> List[str]:
     urls: List[str] = []
     if article:
         for media_url in article.get("media_urls", []) or []:
@@ -477,11 +481,17 @@ def fetch_tweet_detail(tweet_id: str, cursor: Optional[str] = None) -> Dict[str,
     variables = {
         "focalTweetId": tweet_id,
         "with_rux_injections": False,
+        "count": 100,
+        "includeTweetAbovePivot": True,
         "rankingMode": "Relevance",
         "includePromotedContent": False,
         "withCommunity": False,
         "withQuickPromoteEligibilityTweetFields": False,
         "withBirdwatchNotes": True,
+        "withDownvotePerspective": False,
+        "withReactionsMetadata": False,
+        "withReactionsPerspective": False,
+        "withV2Timeline": True,
         "withVoice": False,
         "cursor": cursor,
     }
@@ -547,16 +557,27 @@ def getReplies(
     logger.info(f"Fetching conversation for {conversation_id} (onlyOp={onlyOp})")
 
     tweets_by_id: Dict[str, Dict[str, Any]] = {}
-    cursor_queue: List[Optional[str]] = [None]
-    seen_cursors: set = set()
+    cursor_queue: List[Tuple[CursorType, Optional[str]]] = [(None, None)]
+    seen_cursor_keys: set[Tuple[str, str]] = set()
+    queued_cursor_keys: set[Tuple[str, str]] = set()
     pages_processed = 0
 
+    def _cursor_key(
+        direction: CursorType, value: Optional[str]
+    ) -> Optional[Tuple[str, str]]:
+        if not value:
+            return None
+        direction_lower = (direction or "").lower()
+        return (direction_lower, value[:12])
+
     while cursor_queue and pages_processed < max_pages:
-        cursor = cursor_queue.pop(0)
-        if cursor in seen_cursors:
-            continue
-        if cursor is not None:
-            seen_cursors.add(cursor)
+        direction, cursor = cursor_queue.pop(0)
+        key = _cursor_key(direction, cursor)
+        if key is not None:
+            queued_cursor_keys.discard(key)
+            if key in seen_cursor_keys:
+                continue
+            seen_cursor_keys.add(key)
         pages_processed += 1
 
         detail_data = fetch_tweet_detail(conversation_id, cursor)
@@ -577,9 +598,22 @@ def getReplies(
             tweets_by_id[rest_id] = tweet
             new_count += 1
 
-        for direction, cursor_value in cursors:
-            if cursor_value and cursor_value not in seen_cursors:
-                cursor_queue.append(cursor_value)
+        for cursor_direction, cursor_value in cursors:
+            if not cursor_value:
+                continue
+            direction_lower = (cursor_direction or "").lower()
+            if direction_lower.startswith("top"):
+                continue
+            if direction_lower and direction_lower not in {"bottom", "bottomtimeline"}:
+                continue
+            key = _cursor_key(cursor_direction, cursor_value)
+            if key is not None and key in seen_cursor_keys:
+                continue
+            if key is not None and key in queued_cursor_keys:
+                continue
+            cursor_queue.append((cursor_direction, cursor_value))
+            if key is not None:
+                queued_cursor_keys.add(key)
 
         if new_count == 0 and not cursor_queue:
             break
@@ -642,7 +676,9 @@ def parseReplies(rawReplies, opUsername, highQuality):
         onlyTagsSoFar = True
         contentWords: List[str] = []
         article_metadata = _extract_article_metadata(reply)
-        article_text = _format_article_text(article_metadata) if article_metadata else None
+        article_text = (
+            _format_article_text(article_metadata) if article_metadata else None
+        )
 
         if article_text:
             text_body = article_text
@@ -902,10 +938,7 @@ def convertTwitter(url, forceRefresh):
 if __name__ == "__main__":
     print(
         convertTwitter(
-            "https://x.com/metaproph3t/status/1863281120927760692###convo",
+            "https://x.com/metaproph3t/status/1974891037832458300###convo",
             forceRefresh=True,
         )
     )
-    # print(json.dumps(get_tweet_by_id("1858629520871375295"), indent=4))
-
-# "https://x.com/jon_charb/status/1977811956498370984###convo",
