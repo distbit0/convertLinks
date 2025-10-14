@@ -5,3 +5,4 @@ tmp/
 storage/
 .aider*
 xRequests.py
+logs/

@@ -280,6 +280,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "requests" },
     { name = "secretstorage" },
+    { name = "snscrape" },
     { name = "soundcloud-lib" },
     { name = "telethon" },
     { name = "uncurl" },
@@ -313,6 +314,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "secretstorage", specifier = ">=3.3.3" },
+    { name = "snscrape", specifier = ">=0.7.0.20230622" },
     { name = "soundcloud-lib", specifier = ">=0.6.1" },
     { name = "telethon", specifier = ">=1.37.0" },
     { name = "uncurl", specifier = ">=0.0.11" },
@@ -1086,6 +1088,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pysocks"
+version = "1.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bd/11/293dd436aea955d45fc4e8a35b6ae7270f5b8e00b53cf6c024c83b657a11/PySocks-1.7.1.tar.gz", hash = "sha256:3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0", size = 284429, upload-time = "2019-09-20T02:07:35.714Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/59/b4572118e098ac8e46e399a1dd0f2d85403ce8bbaad9ec79373ed6badaf9/PySocks-1.7.1-py3-none-any.whl", hash = "sha256:2725bd0a9925919b9b51739eea5f9e2bae91e83288108a9ad338b2e3a4435ee5", size = 16725, upload-time = "2019-09-20T02:06:22.938Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "8.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1146,6 +1157,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/7c/e4/56027c4a6b4ae70ca9de302488c5ca95ad4a39e190093d6c1a8ace08341b/requests-2.32.4-py3-none-any.whl", hash = "sha256:27babd3cda2a6d50b30443204ee89830707d396671944c998b5975b031ac2b2c", size = 64847, upload-time = "2025-06-09T16:43:05.728Z" },
 ]
 
+[package.optional-dependencies]
+socks = [
+    { name = "pysocks" },
+]
+
 [[package]]
 name = "requests-file"
 version = "2.1.0"
@@ -1202,6 +1218,21 @@ wheels = [
 ]
 
 [[package]]
+name = "snscrape"
+version = "0.7.0.20230622"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "filelock" },
+    { name = "lxml" },
+    { name = "requests", extra = ["socks"] },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/10/34/2d50c4f84652c97030ade2b3cd1293064b0a19f5d71ffe19f84d7bc06b39/snscrape-0.7.0.20230622.tar.gz", hash = "sha256:71da8aec489a3b1139caaab699ca489c708d117828a2d5bcdf1ce2c9e76f3708", size = 70598, upload-time = "2023-06-22T20:27:29.817Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/82/90/82b86fdf8e3a3faef16036b57764e969a931285cce1d82956ccda60daa2c/snscrape-0.7.0.20230622-py3-none-any.whl", hash = "sha256:6eedb85c7e79f35361dde1949e1e7e2dee44e9f8469668438c9f8e72980f482f", size = 74814, upload-time = "2023-06-22T20:27:27.886Z" },
+]
+
+[[package]]
 name = "soundcloud-lib"
 version = "0.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1232,6 +1263,7 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/58/af/9b7111e3f63fffe8e55b7ceb8bda023173e2052f420b6debcb25fd2fbc15/telethon-1.40.0.tar.gz", hash = "sha256:40e83326877a2e68b754d4b6d0d1ca5ac924110045b039e02660f2d67add97db", size = 646723, upload-time = "2025-04-21T09:12:10.506Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2c/5a/c5370edb3215d19a6e858f4169b8eec725ba55f9d39df0f557508048c037/Telethon-1.40.0-py3-none-any.whl", hash = "sha256:146fd4cb2a7afa66bc67f9c2167756096a37b930f65711a3e7399ec9874dcfa7", size = 722013, upload-time = "2025-04-21T09:12:08.399Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/b0/78f74085b6c88c2bf2bec39c67267cd9ba6af24ceaea9654fb0c272a53da/telethon-1.40.0-py3-none-any.whl", hash = "sha256:1aebaca04fd8410968816645bdbcc0baeff55429b6d6bec37e647417bb8e8a2c", size = 744897, upload-time = "2025-09-01T15:32:34.212Z" },
 ]
 
 [[package]]

@@ -6,9 +6,6 @@ from youtube_transcript_api import (
 from loguru import logger
 import utilities
 from dotenv import load_dotenv
-import pysnooper
-import json
-import re
 import requests
 from bs4 import BeautifulSoup
 

@@ -1,144 +1,371 @@
-import traceback
-import re
-import time
-import pickle
 import json
-from datetime import datetime, timedelta
-import utilities
-import re
-from dotenv import load_dotenv
 import os
-import requests
+import re
+import traceback
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
+import requests
+import utilities
+from dotenv import load_dotenv
+from loguru import logger
+from http.cookies import SimpleCookie
 
 load_dotenv()
 
-csrf_token = os.getenv("TWITTER_CT0_TOKEN")
-bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
-xClientTxid = os.getenv("TWITTER_XCLIENTTXID")
-cookie = os.getenv("TWITTER_COOKIE")
+LOG_DIR = Path(__file__).parent / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+logger.add(
+    LOG_DIR / "convertTwitter.log",
+    rotation="512 KB",
+    retention=5,
+    enqueue=True,
+    serialize=False,
+)
 
 ignored_accounts = ["memdotai", "threadreaderapp"]
 
-features = '{"profile_label_improvements_pcf_account_label_enabled":false,"rweb_tipjar_consumption_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"creator_subscriptions_quote_tweet_preview_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}'
+
+class TwitterAuthError(RuntimeError):
+    """Raised when Twitter authentication fails."""
 
 
-headers = {
-    "accept": "*/*",
-    "accept-language": "en-GB,en;q=0.9",
-    "authorization": f"Bearer {bearer_token}",
-    "cache-control": "no-cache",
-    "content-type": "application/json",
-    "cookie": cookie,
-    "pragma": "no-cache",
-    "priority": "u=1, i",
-    "referer": "https://x.com/",
-    "sec-ch-ua": '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Linux"',
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
-    "sec-gpc": "1",
-    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "x-client-transaction-id": xClientTxid,
-    "x-client-uuid": "d8c95e47-29a5-4548-9cd4-b4a0db7afd05",
-    "x-csrf-token": csrf_token,
-    "x-twitter-active-user": "yes",
-    "x-twitter-auth-type": "OAuth2Session",
-    "x-twitter-client-language": "en",
+class TwitterGraphQLError(RuntimeError):
+    """Raised when the Twitter GraphQL API returns an error."""
+
+
+_TWITTER_SESSION: Optional[requests.Session] = None
+
+TWITTER_USER_AGENT = (
+    os.getenv("TWITTER_USER_AGENT")
+    or "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+)
+
+TWEET_RESULT_FEATURES: Dict[str, bool] = {
+    "creator_subscriptions_tweet_preview_api_enabled": True,
+    "premium_content_api_read_enabled": False,
+    "communities_web_enable_tweet_community_results_fetch": True,
+    "c9s_tweet_anatomy_moderator_badge_enabled": True,
+    "responsive_web_grok_analyze_button_fetch_trends_enabled": False,
+    "responsive_web_grok_analyze_post_followups_enabled": False,
+    "responsive_web_jetfuel_frame": True,
+    "responsive_web_grok_share_attachment_enabled": True,
+    "articles_preview_enabled": True,
+    "responsive_web_edit_tweet_api_enabled": True,
+    "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
+    "view_counts_everywhere_api_enabled": True,
+    "longform_notetweets_consumption_enabled": True,
+    "responsive_web_twitter_article_tweet_consumption_enabled": True,
+    "tweet_awards_web_tipping_enabled": False,
+    "responsive_web_grok_show_grok_translated_post": False,
+    "responsive_web_grok_analysis_button_from_backend": True,
+    "creator_subscriptions_quote_tweet_preview_enabled": False,
+    "freedom_of_speech_not_reach_fetch_enabled": True,
+    "standardized_nudges_misinfo": True,
+    "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": True,
+    "longform_notetweets_rich_text_read_enabled": True,
+    "longform_notetweets_inline_media_enabled": True,
+    "payments_enabled": False,
+    "profile_label_improvements_pcf_label_in_post_enabled": True,
+    "rweb_tipjar_consumption_enabled": True,
+    "verified_phone_label_enabled": False,
+    "responsive_web_grok_image_annotation_enabled": True,
+    "responsive_web_grok_community_note_auto_translation_is_enabled": False,
+    "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
+    "responsive_web_graphql_timeline_navigation_enabled": True,
+    "responsive_web_enhance_cards_enabled": False,
+}
+
+TWEET_DETAIL_FEATURES: Dict[str, bool] = {
+    "rweb_video_screen_enabled": False,
+    "payments_enabled": False,
+    "profile_label_improvements_pcf_label_in_post_enabled": True,
+    "rweb_tipjar_consumption_enabled": True,
+    "verified_phone_label_enabled": False,
+    "creator_subscriptions_tweet_preview_api_enabled": True,
+    "responsive_web_graphql_timeline_navigation_enabled": True,
+    "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
+    "premium_content_api_read_enabled": False,
+    "communities_web_enable_tweet_community_results_fetch": True,
+    "c9s_tweet_anatomy_moderator_badge_enabled": True,
+    "responsive_web_grok_analyze_button_fetch_trends_enabled": False,
+    "responsive_web_grok_analyze_post_followups_enabled": True,
+    "responsive_web_jetfuel_frame": True,
+    "responsive_web_grok_share_attachment_enabled": True,
+    "articles_preview_enabled": True,
+    "responsive_web_edit_tweet_api_enabled": True,
+    "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
+    "view_counts_everywhere_api_enabled": True,
+    "longform_notetweets_consumption_enabled": True,
+    "responsive_web_twitter_article_tweet_consumption_enabled": True,
+    "tweet_awards_web_tipping_enabled": False,
+    "responsive_web_grok_show_grok_translated_post": False,
+    "responsive_web_grok_analysis_button_from_backend": True,
+    "creator_subscriptions_quote_tweet_preview_enabled": False,
+    "freedom_of_speech_not_reach_fetch_enabled": True,
+    "standardized_nudges_misinfo": True,
+    "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": True,
+    "longform_notetweets_rich_text_read_enabled": True,
+    "longform_notetweets_inline_media_enabled": True,
+    "responsive_web_grok_image_annotation_enabled": True,
+    "responsive_web_grok_community_note_auto_translation_is_enabled": False,
+    "responsive_web_enhance_cards_enabled": False,
+}
+
+TWEET_DETAIL_FIELD_TOGGLES: Dict[str, bool] = {
+    "withArticleRichContentState": True,
+    "withArticlePlainText": False,
+    "withGrokAnalyze": False,
+    "withDisallowedReplyControls": False,
 }
 
 
-def get_tweet_by_id(tweet_id):
-    base_url = "https://x.com/i/api/graphql/_8aYOgEDz35BrBcBal1-_w/TweetDetail"
+def _load_required_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise TwitterAuthError(
+            f"Environment variable {name} is required to access Twitter's API."
+        )
+    return value.strip()
 
-    # Request parameters
-    variables = {
-        "focalTweetId": tweet_id,
-        "with_rux_injections": True,
-        "rankingMode": "Relevance",
-        "includePromotedContent": True,
-        "withCommunity": True,
-        "withQuickPromoteEligibilityTweetFields": True,
-        "withBirdwatchNotes": True,
-        "withVoice": True,
-    }
 
-    field_toggles = {
-        "withArticleRichContentState": True,
-        "withArticlePlainText": False,
-        "withGrokAnalyze": False,
-        "withDisallowedReplyControls": False,
-    }
+def _build_twitter_session() -> requests.Session:
+    global _TWITTER_SESSION
+    if _TWITTER_SESSION is not None:
+        return _TWITTER_SESSION
 
-    # URL parameters
+    bearer = _load_required_env("TWITTER_BEARER_TOKEN")
+    ct0 = _load_required_env("TWITTER_CT0_TOKEN")
+    cookie_raw = _load_required_env("TWITTER_COOKIE")
+    x_client_txid = os.getenv("TWITTER_XCLIENTTXID")
+    x_client_uuid = os.getenv(
+        "TWITTER_XCLIENTUUID", "d8c95e47-29a5-4548-9cd4-b4a0db7afd05"
+    )
+
+    session = requests.Session()
+    session.headers.update(
+        {
+            "Authorization": f"Bearer {bearer}",
+            "X-Csrf-Token": ct0,
+            "User-Agent": TWITTER_USER_AGENT,
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Content-Type": "application/json",
+            "Referer": "https://x.com/",
+            "X-Twitter-Active-User": "yes",
+            "X-Twitter-Client-Language": "en",
+            "X-Twitter-Auth-Type": "OAuth2Session",
+        }
+    )
+    if x_client_txid:
+        session.headers["X-Client-Transaction-Id"] = x_client_txid
+    if x_client_uuid:
+        session.headers["X-Client-Uuid"] = x_client_uuid
+
+    cookie = SimpleCookie()
+    cookie.load(cookie_raw)
+    cookie_jar = {key: morsel.value for key, morsel in cookie.items()}
+    session.cookies.update(cookie_jar)
+    session.headers["Cookie"] = cookie_raw
+
+    _TWITTER_SESSION = session
+    return session
+
+
+def _twitter_graphql_request(
+    query_id: str,
+    query_name: str,
+    variables: Dict[str, Any],
+    features: Dict[str, Any],
+    field_toggles: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    session = _build_twitter_session()
     params = {
-        "variables": json.dumps(variables),
-        "features": features,
-        "fieldToggles": json.dumps(field_toggles),
+        "variables": json.dumps(variables, separators=(",", ":")),
+        "features": json.dumps(features, separators=(",", ":")),
     }
+    if field_toggles is not None:
+        params["fieldToggles"] = json.dumps(field_toggles, separators=(",", ":"))
+
+    url = f"https://x.com/i/api/graphql/{query_id}/{query_name}"
+    try:
+        response = session.get(url, params=params, timeout=15)
+    except requests.RequestException as exc:
+        logger.error(f"Twitter GraphQL request failed: {exc}")
+        raise TwitterGraphQLError("Twitter GraphQL request failed") from exc
+
+    if response.status_code in (401, 403):
+        logger.error(
+            "Twitter authentication failed with status %s: %.200s",
+            response.status_code,
+            response.text,
+        )
+        raise TwitterAuthError("Twitter authentication failed. Refresh credentials.")
+    if response.status_code >= 400:
+        logger.error(
+            "Twitter GraphQL returned status %s: %.200s",
+            response.status_code,
+            response.text,
+        )
+        raise TwitterGraphQLError(
+            f"Twitter GraphQL returned status {response.status_code}"
+        )
 
     try:
-        # Make the request
-        response = requests.get(base_url, params=params, headers=headers)
-        print(f"Response: {response.text}")
-        response.raise_for_status()  # Raise exception for bad status codes
-        response_data = response.json()
+        data = response.json()
+    except json.JSONDecodeError as exc:
+        logger.error(f"Twitter GraphQL returned invalid JSON: {exc}")
+        raise TwitterGraphQLError("Twitter GraphQL returned invalid JSON") from exc
 
-        try:
-            entries = response_data["data"]["threaded_conversation_with_injections_v2"][
-                "instructions"
-            ][0]["entries"]
-        except (KeyError, IndexError):
-            return None
+    if data.get("errors"):
+        logger.error("Twitter GraphQL errors: %s", data["errors"])
+        raise TwitterGraphQLError("Twitter GraphQL returned errors")
 
-        # Helper function to extract tweet from different response structures
-        def get_tweet_result(content):
-            if not content.get("itemContent"):
-                return None
+    return data
 
-            tweet_results = content["itemContent"].get("tweet_results", {})
-            if not tweet_results:
-                return None
 
-            result = tweet_results.get("result")
-            if not result:
-                return None
+def _coerce_tweet(result: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not isinstance(result, dict):
+        return None
+    typename = result.get("__typename")
+    if typename == "Tweet":
+        return result
+    if typename == "TweetWithVisibilityResults":
+        return _coerce_tweet(result.get("tweet"))
+    return None
 
-            # Handle both direct tweets and tweets with visibility results
-            if result["__typename"] == "TweetWithVisibilityResults":
-                return result.get("tweet")
-            return result if result["__typename"] == "Tweet" else None
 
-        # Iterate through entries to find matching tweet
+def _get_user_result(tweet: Dict[str, Any]) -> Dict[str, Any]:
+    core = tweet.get("core", {})
+    user_results = core.get("user_results", {})
+    result = user_results.get("result")
+    return result if isinstance(result, dict) else {}
+
+
+def _get_user_screen_name(tweet: Dict[str, Any]) -> Optional[str]:
+    user = _get_user_result(tweet)
+    legacy = user.get("legacy")
+    if isinstance(legacy, dict) and legacy.get("screen_name"):
+        return legacy["screen_name"]
+    core = user.get("core")
+    if isinstance(core, dict) and core.get("screen_name"):
+        return core["screen_name"]
+    if isinstance(user.get("screen_name"), str):
+        return user["screen_name"]
+    return None
+
+
+def _extract_tweets_from_structure(node: Any, visited: Optional[set] = None) -> List[Dict[str, Any]]:
+    if visited is None:
+        visited = set()
+    tweets: List[Dict[str, Any]] = []
+    if not isinstance(node, dict):
+        return tweets
+    node_id = id(node)
+    if node_id in visited:
+        return tweets
+    visited.add(node_id)
+
+    tweet_results = node.get("tweet_results")
+    if isinstance(tweet_results, dict):
+        tweet = _coerce_tweet(tweet_results.get("result"))
+        if tweet:
+            tweets.append(tweet)
+
+    # Nested data
+    if "tweet" in node and isinstance(node["tweet"], dict):
+        tweets.extend(_extract_tweets_from_structure(node["tweet"], visited))
+
+    for key in ("itemContent", "content", "item"):
+        if key in node and isinstance(node[key], dict):
+            tweets.extend(_extract_tweets_from_structure(node[key], visited))
+
+    if "items" in node and isinstance(node["items"], list):
+        for item in node["items"]:
+            tweets.extend(_extract_tweets_from_structure(item, visited))
+
+    return tweets
+
+
+def _parse_tweet_detail_response(
+    data: Dict[str, Any]
+) -> Tuple[List[Dict[str, Any]], List[Tuple[str, str]]]:
+    instructions = (
+        data.get("data", {})
+        .get("threaded_conversation_with_injections_v2", {})
+        .get("instructions", [])
+    )
+    tweets: List[Dict[str, Any]] = []
+    cursors: List[tuple[str, str]] = []
+    for instruction in instructions:
+        entries = instruction.get("entries")
+        if not entries and instruction.get("entry"):
+            entries = [instruction["entry"]]
+        if not entries:
+            continue
         for entry in entries:
-            if "content" in entry:
-                # Handle single tweets
-                if entry["content"]["entryType"] == "TimelineTimelineItem":
-                    tweet = get_tweet_result(entry["content"])
-                    if tweet and tweet.get("rest_id") == tweet_id:
-                        return tweet
+            content = entry.get("content") or {}
+            entry_id = entry.get("entryId") or entry.get("entry_id") or ""
+            tweets.extend(_extract_tweets_from_structure(content))
+            cursor_value = content.get("value")
+            if cursor_value:
+                cursor_type = content.get("cursorType")
+                entry_id_lower = entry_id.lower()
+                if cursor_type == "Bottom" or "cursor-bottom" in entry_id_lower:
+                    cursors.append(("bottom", cursor_value))
+                elif cursor_type == "Top" or "cursor-top" in entry_id_lower:
+                    cursors.append(("top", cursor_value))
+    return tweets, cursors
 
-                # Handle conversation threads
-                elif entry["content"]["entryType"] == "TimelineTimelineModule":
-                    for item in entry["content"].get("items", []):
-                        if "item" in item:
-                            tweet = get_tweet_result(item["item"])
-                            if tweet and tweet.get("rest_id") == tweet_id:
-                                return tweet
 
-        return None
+def fetch_tweet_by_rest_id(tweet_id: str) -> Optional[Dict[str, Any]]:
+    data = _twitter_graphql_request(
+        "f2sagi1jweVHFkTUIHzmMQ",
+        "TweetResultByRestId",
+        {
+            "tweetId": tweet_id,
+            "withCommunity": False,
+            "includePromotedContent": False,
+            "withVoice": False,
+        },
+        TWEET_RESULT_FEATURES,
+    )
+    result = (
+        data.get("data", {})
+        .get("tweetResult", {})
+        .get("result")
+    )
+    tweet = _coerce_tweet(result)
+    if tweet:
+        logger.debug(f"Fetched primary tweet {tweet_id} via TweetResultByRestId")
+    return tweet
 
-    except requests.RequestException as e:
-        print(f"Error making request: {e}")
-        return None
-    except json.JSONDecodeError as e:
-        print(f"Error parsing JSON response: {e}")
-        return None
+
+def fetch_tweet_detail(tweet_id: str, cursor: Optional[str] = None) -> Dict[str, Any]:
+    variables = {
+        "focalTweetId": tweet_id,
+        "with_rux_injections": False,
+        "rankingMode": "Relevance",
+        "includePromotedContent": False,
+        "withCommunity": False,
+        "withQuickPromoteEligibilityTweetFields": False,
+        "withBirdwatchNotes": True,
+        "withVoice": False,
+        "cursor": cursor,
+    }
+    return _twitter_graphql_request(
+        "R9IzzyzQBV87-DOWpcvDmw",
+        "TweetDetail",
+        variables,
+        TWEET_DETAIL_FEATURES,
+        TWEET_DETAIL_FIELD_TOGGLES,
+    )
 
 
 def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
+    screen_name = _get_user_screen_name(tweet)
+    op_username_lower = (opUsername or "").lower()
     image_url = ""
     if (
         "extended_entities" in tweet["legacy"]
@@ -163,14 +390,11 @@ def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
     )
     isReplyToOP = (
         "in_reply_to_screen_name" in tweet["legacy"]
-        and tweet["legacy"]["in_reply_to_screen_name"].lower() == opUsername.lower()
+        and tweet["legacy"]["in_reply_to_screen_name"].lower() == op_username_lower
     )
     # fewLikes = tweet["legacy"]["favorite_count"] < 3
     manyWords = len(tweet["legacy"]["full_text"].split(" ")) > 7
-    byOp = (
-        tweet["core"]["user_results"]["result"]["legacy"]["screen_name"].lower()
-        == opUsername.lower()
-    )
+    byOp = screen_name and screen_name.lower() == op_username_lower
     noLinks = (
         "https://" not in tweet["legacy"]["full_text"]
         or "full_text" not in tweet["legacy"]
@@ -179,124 +403,115 @@ def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
     lowQualReplyToOp = isReplyToOP and lowQuality
     lowQualReply = lowQuality
     if (lowQualReplyToOp or lowQualReply) and highQuality:
-        print(
-            f"skipping tweet: {tweet['legacy']['full_text'][:60]} |||| https://x.com/{tweet['core']['user_results']['result']['legacy']['screen_name']}/status/{tweet['rest_id']},  due to: lowQualReplyToOp: {lowQualReplyToOp}, lowQualReply: {lowQualReply}\n"
+        logger.debug(
+            f"Skipping tweet {tweet['rest_id']} due to low quality "
+            f"(to_op={lowQualReplyToOp}, low_reply={lowQualReply})"
         )
         return True
     return False
 
 
 def getReplies(
-    conversation_id, onlyOp=False, max_retries=10, retry_delay=180
-):  # 180 seconds = 3 minutes
-    print(conversation_id)
-    mainTweet = get_tweet_by_id(conversation_id)
-    opUsername = mainTweet["core"]["user_results"]["result"]["legacy"]["screen_name"]
-    if not mainTweet:
-        print("Main tweet not found.")
-        return None
-    if onlyOp:
-        query = f"conversation_id:{conversation_id} from:{opUsername}"
-    # elif highQuality:
-    #     query = f"conversation_id:{conversation_id} min_faves:2" # this is actually bad as a single reply in a convo with <2 likes will cut off rest of convo
-    else:
-        query = f"conversation_id:{conversation_id}"
+    conversation_id: str,
+    onlyOp: bool = False,
+    max_pages: int = 25,
+) -> List[Dict[str, Any]]:
+    logger.info(f"Fetching conversation for {conversation_id} (onlyOp={onlyOp})")
 
-    url = "https://x.com/i/api/graphql/MJuDXJXZ8bB--c9Ujhy-0g/SearchTimeline"
-    print("query", query)
+    tweets_by_id: Dict[str, Dict[str, Any]] = {}
+    cursor_queue: List[Optional[str]] = [None]
+    seen_cursors: set = set()
+    pages_processed = 0
 
-    all_tweets = [mainTweet]
-    cursor = None
+    while cursor_queue and pages_processed < max_pages:
+        cursor = cursor_queue.pop(0)
+        if cursor in seen_cursors:
+            continue
+        if cursor is not None:
+            seen_cursors.add(cursor)
+        pages_processed += 1
 
-    while True:
-        variables = {
-            "rawQuery": query,
-            "count": 20,
-            "querySource": "typed_query",
-            "product": "Latest",
-        }
-        if cursor:
-            variables["cursor"] = cursor
+        detail_data = fetch_tweet_detail(conversation_id, cursor)
+        tweets, cursors = _parse_tweet_detail_response(detail_data)
+        new_count = 0
 
-        params = {"variables": json.dumps(variables), "features": features}
+        for tweet in tweets:
+            if not tweet:
+                continue
+            rest_id = tweet.get("rest_id")
+            legacy = tweet.get("legacy")
+            core = tweet.get("core", {})
+            if not rest_id or rest_id in tweets_by_id or not legacy or not core:
+                continue
+            screen_name = _get_user_screen_name(tweet)
+            if not screen_name:
+                continue
+            tweets_by_id[rest_id] = tweet
+            new_count += 1
 
-        retry_count = 0
-        while retry_count < max_retries:
-            try:
-                response = requests.get(url, params=params, headers=headers)
-                response.raise_for_status()
-                data = response.json()
-                break  # If successful, break out of the retry loop
-            except (requests.RequestException, json.JSONDecodeError) as e:
-                retry_count += 1
-                if retry_count == max_retries:
-                    print(f"Failed after {max_retries} attempts: {e}")
-                    return all_tweets
-                print(f"Attempt {retry_count} failed: {e}")
-                print(f"Waiting {retry_delay} seconds before retrying...")
-                time.sleep(retry_delay)
+        for direction, cursor_value in cursors:
+            if cursor_value and cursor_value not in seen_cursors:
+                cursor_queue.append(cursor_value)
 
-        instructions = (
-            data.get("data", {})
-            .get("search_by_raw_query", {})
-            .get("search_timeline", {})
-            .get("timeline", {})
-            .get("instructions", [])
+        if new_count == 0 and not cursor_queue:
+            break
+
+    if conversation_id not in tweets_by_id:
+        main_tweet = fetch_tweet_by_rest_id(conversation_id)
+        if main_tweet:
+            tweets_by_id[conversation_id] = main_tweet
+
+    if not tweets_by_id:
+        raise TwitterGraphQLError(
+            f"Twitter returned no conversation data for tweet {conversation_id}"
         )
-        if not instructions:
-            print("No instructions found in response.")
-            break
 
-        bottom_cursor = None
-        newtweets = 0
-        for instruction in instructions:
-            entries = instruction.get("entries", []) or [instruction.get("entry", {})]
-            for entry in entries:
-                content = entry.get("content", {})
-                item_content = content.get("itemContent", {})
-                tweet = item_content.get("tweet_results", {}).get("result")
-                if (
-                    tweet
-                    and "rest_id" in tweet
-                    and tweet["rest_id"]
-                    not in [tweet["rest_id"] for tweet in all_tweets]
-                ):
-                    all_tweets.append(tweet)
-                    newtweets += 1
-                if "cursor-bottom" in entry.get(
-                    "entryId", ""
-                ) or "cursor-bottom" in entry.get("entry_id_to_replace", ""):
-                    bottom_cursor = entry.get("content", {}).get("value")
-        if bottom_cursor and newtweets > 0:
-            cursor = bottom_cursor
-            print(f"Fetching next page with cursor: {cursor}, newtweets: {newtweets}")
-            time.sleep(1)  # Respect rate limits
-        elif newtweets == 0:
-            print("no new tweets. New cursor:", cursor)
-            # with open("tmp/noNewTweets.json", "w") as f:
-            #     f.write(json.dumps(data, indent=4))
-            break
-        else:
-            print(f"no new cursor, {newtweets} new tweets")
-            break
+    tweets: List[Dict[str, Any]] = list(tweets_by_id.values())
+    tweets.sort(
+        key=lambda tweet: (
+            0 if tweet.get("rest_id") == conversation_id else 1,
+            tweet.get("rest_id"),
+        )
+    )
 
-    return all_tweets
+    if onlyOp and tweets:
+        op_username = _get_user_screen_name(tweets[0])
+        if not op_username:
+            return []
+        op_username = op_username.lower().strip()
+        op_tweets = [
+            tweet
+            for tweet in tweets
+            if (
+                (_get_user_screen_name(tweet) or "").lower().strip()
+                == op_username
+            )
+        ]
+        logger.info(
+            f"Filtered thread to {len(op_tweets)} tweet(s) from OP {op_username}"
+        )
+        return op_tweets
+
+    return tweets
 
 
 def parseReplies(rawReplies, opUsername, highQuality):
     replies_dict = {}
     for reply in rawReplies:
-        if (
-            reply["core"]["user_results"]["result"]["legacy"]["screen_name"].lower()
-            in ignored_accounts
-        ):
+        screen_name = _get_user_screen_name(reply)
+        if not screen_name:
+            continue
+        if screen_name.lower() in ignored_accounts:
             continue
         try:
             if identifyLowQualityTweet(reply, opUsername, highQuality, rawReplies):
                 continue
-        except:
-            print(traceback.format_exc())
-            print(reply)
+        except Exception:
+            logger.exception("Failed to process reply while filtering quality")
+            try:
+                logger.debug(json.dumps(reply)[:1000])
+            except Exception:
+                logger.debug(f"Reply (repr): {repr(reply)}")
             continue
 
         onlyTagsSoFar = True
@@ -323,7 +538,7 @@ def parseReplies(rawReplies, opUsername, highQuality):
         text = " ".join(contentWords)
         text = (
             "{"
-            + reply["core"]["user_results"]["result"]["legacy"]["screen_name"]
+            + screen_name
             + "} "
             + text
         )
@@ -345,7 +560,7 @@ def parseReplies(rawReplies, opUsername, highQuality):
 
         tweetUrl = (
             "https://twitter.com/"
-            + reply["core"]["user_results"]["result"]["legacy"]["screen_name"]
+            + screen_name
             + "/status/"
             + str(reply["rest_id"])
         )
@@ -521,9 +736,29 @@ def convertTwitter(url, forceRefresh):
     rawReplies = getReplies(tweet_id, onlyOp)
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))
     # rawReplies = pickle.load(open("tmp/rawReplies.pickle", "rb"))
-    op_username = rawReplies[0]["core"]["user_results"]["result"]["legacy"][
-        "screen_name"
-    ]
+
+    op_tweet = next(
+        (
+            tweet
+            for tweet in rawReplies
+            if tweet.get("rest_id") == tweet_id and _get_user_screen_name(tweet)
+        ),
+        None,
+    )
+    if op_tweet is None:
+        op_tweet = next(
+            (tweet for tweet in rawReplies if _get_user_screen_name(tweet)),
+            None,
+        )
+    if op_tweet is None:
+        raise TwitterGraphQLError(
+            f"Could not locate operator tweet for conversation {tweet_id}"
+        )
+    op_username = _get_user_screen_name(op_tweet)
+    if not op_username:
+        raise TwitterGraphQLError(
+            f"Operator tweet missing screen_name for conversation {tweet_id}"
+        )
     replies = parseReplies(rawReplies, op_username, highQuality)
     html = f'<a href="{url}">Original</a><br><br>' + json_to_html(
         replies, tweet_id, op_username
