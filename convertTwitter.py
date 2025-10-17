@@ -900,13 +900,9 @@ def convertTwitter(url, forceRefresh):
     else:
         return url
     tweet_id = url.split("/")[-1].strip(".html").split("#")[0].split("?")[0]
-    existing_gist_url = utilities.getGistUrl(tweet_id)
-    if existing_gist_url and not forceRefresh:
-        logger.info(
-            f"Existing gist found for {tweet_id}; refreshing to capture latest replies."
-        )
-    elif forceRefresh:
-        logger.info(f"Force refresh requested for {tweet_id}.")
+    gistUrl = utilities.getGistUrl(tweet_id)
+    if gistUrl and not forceRefresh:
+        return gistUrl
     rawReplies = getReplies(tweet_id, onlyOp)
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))
     # rawReplies = pickle.load(open("tmp/rawReplies.pickle", "rb"))
