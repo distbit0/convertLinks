@@ -604,7 +604,10 @@ def getReplies(
             direction_lower = (cursor_direction or "").lower()
             if direction_lower.startswith("top"):
                 continue
-            if direction_lower and direction_lower not in {"bottom", "bottomtimeline"}:
+            is_show_more_cursor = "showmore" in direction_lower
+            if direction_lower and not (
+                direction_lower in {"bottom", "bottomtimeline"} or is_show_more_cursor
+            ):
                 continue
             key = _cursor_key(cursor_direction, cursor_value)
             if key is not None and key in seen_cursor_keys:
@@ -897,9 +900,13 @@ def convertTwitter(url, forceRefresh):
     else:
         return url
     tweet_id = url.split("/")[-1].strip(".html").split("#")[0].split("?")[0]
-    gistUrl = utilities.getGistUrl(tweet_id)
-    if gistUrl and not forceRefresh:
-        return gistUrl
+    existing_gist_url = utilities.getGistUrl(tweet_id)
+    if existing_gist_url and not forceRefresh:
+        logger.info(
+            f"Existing gist found for {tweet_id}; refreshing to capture latest replies."
+        )
+    elif forceRefresh:
+        logger.info(f"Force refresh requested for {tweet_id}.")
     rawReplies = getReplies(tweet_id, onlyOp)
     # pickle.dump(rawReplies, open("tmp/rawReplies.pickle", "wb"))
     # rawReplies = pickle.load(open("tmp/rawReplies.pickle", "rb"))
@@ -938,7 +945,7 @@ def convertTwitter(url, forceRefresh):
 if __name__ == "__main__":
     print(
         convertTwitter(
-            "https://x.com/metaproph3t/status/1974891037832458300###convo",
+            "https://x.com/metaproph3t/status/1978263082754519285##convo",
             forceRefresh=True,
         )
     )
