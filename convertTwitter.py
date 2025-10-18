@@ -5,6 +5,8 @@ import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from collections import deque
+import heapq
 import requests
 import utilities
 from dotenv import load_dotenv
@@ -504,6 +506,81 @@ def fetch_tweet_detail(tweet_id: str, cursor: Optional[str] = None) -> Dict[str,
     )
 
 
+def _collect_conversation_tweets(
+    conversation_id: str,
+    max_pages: int,
+) -> Dict[str, Dict[str, Any]]:
+    tweets_by_id: Dict[str, Dict[str, Any]] = {}
+    cursor_queue: List[Tuple[CursorType, Optional[str]]] = [(None, None)]
+    seen_cursor_keys: set[Tuple[str, str]] = set()
+    queued_cursor_keys: set[Tuple[str, str]] = set()
+    pages_processed = 0
+
+    def _cursor_key(
+        direction: CursorType, value: Optional[str]
+    ) -> Optional[Tuple[str, str]]:
+        if not value:
+            return None
+        direction_lower = (direction or "").lower()
+        return (direction_lower, value)
+
+    while cursor_queue and pages_processed < max_pages:
+        direction, cursor = cursor_queue.pop(0)
+        key = _cursor_key(direction, cursor)
+        if key is not None:
+            queued_cursor_keys.discard(key)
+            if key in seen_cursor_keys:
+                continue
+            seen_cursor_keys.add(key)
+        pages_processed += 1
+
+        detail_data = fetch_tweet_detail(conversation_id, cursor)
+        tweets, cursors = _parse_tweet_detail_response(detail_data)
+
+        for tweet in tweets:
+            if not tweet:
+                continue
+            rest_id = tweet.get("rest_id")
+            legacy = tweet.get("legacy")
+            core = tweet.get("core", {})
+            if not rest_id or rest_id in tweets_by_id or not legacy or not core:
+                continue
+            screen_name = _get_user_screen_name(tweet)
+            if not screen_name:
+                continue
+            tweets_by_id[rest_id] = tweet
+
+        for cursor_direction, cursor_value in cursors:
+            if not cursor_value:
+                continue
+            direction_lower = (cursor_direction or "").lower()
+            if direction_lower.startswith("top"):
+                continue
+            is_show_more_cursor = "showmore" in direction_lower
+            if direction_lower and not (
+                direction_lower in {"bottom", "bottomtimeline"} or is_show_more_cursor
+            ):
+                continue
+            key = _cursor_key(cursor_direction, cursor_value)
+            if key is not None and key in seen_cursor_keys:
+                continue
+            if key is not None and key in queued_cursor_keys:
+                continue
+            cursor_queue.append((cursor_direction, cursor_value))
+            if key is not None:
+                queued_cursor_keys.add(key)
+
+        if not cursor_queue:
+            break
+
+    if conversation_id not in tweets_by_id:
+        main_tweet = fetch_tweet_by_rest_id(conversation_id)
+        if main_tweet:
+            tweets_by_id[conversation_id] = main_tweet
+
+    return tweets_by_id
+
+
 def identifyLowQualityTweet(tweet, opUsername, highQuality, allTweets):
     screen_name = _get_user_screen_name(tweet)
     op_username_lower = (opUsername or "").lower()
@@ -556,80 +633,129 @@ def getReplies(
 ) -> List[Dict[str, Any]]:
     logger.info(f"Fetching conversation for {conversation_id} (onlyOp={onlyOp})")
 
-    tweets_by_id: Dict[str, Dict[str, Any]] = {}
-    cursor_queue: List[Tuple[CursorType, Optional[str]]] = [(None, None)]
-    seen_cursor_keys: set[Tuple[str, str]] = set()
-    queued_cursor_keys: set[Tuple[str, str]] = set()
-    pages_processed = 0
-
-    def _cursor_key(
-        direction: CursorType, value: Optional[str]
-    ) -> Optional[Tuple[str, str]]:
-        if not value:
-            return None
-        direction_lower = (direction or "").lower()
-        return (direction_lower, value[:12])
-
-    while cursor_queue and pages_processed < max_pages:
-        direction, cursor = cursor_queue.pop(0)
-        key = _cursor_key(direction, cursor)
-        if key is not None:
-            queued_cursor_keys.discard(key)
-            if key in seen_cursor_keys:
-                continue
-            seen_cursor_keys.add(key)
-        pages_processed += 1
-
-        detail_data = fetch_tweet_detail(conversation_id, cursor)
-        tweets, cursors = _parse_tweet_detail_response(detail_data)
-        new_count = 0
-
-        for tweet in tweets:
-            if not tweet:
-                continue
-            rest_id = tweet.get("rest_id")
-            legacy = tweet.get("legacy")
-            core = tweet.get("core", {})
-            if not rest_id or rest_id in tweets_by_id or not legacy or not core:
-                continue
-            screen_name = _get_user_screen_name(tweet)
-            if not screen_name:
-                continue
-            tweets_by_id[rest_id] = tweet
-            new_count += 1
-
-        for cursor_direction, cursor_value in cursors:
-            if not cursor_value:
-                continue
-            direction_lower = (cursor_direction or "").lower()
-            if direction_lower.startswith("top"):
-                continue
-            is_show_more_cursor = "showmore" in direction_lower
-            if direction_lower and not (
-                direction_lower in {"bottom", "bottomtimeline"} or is_show_more_cursor
-            ):
-                continue
-            key = _cursor_key(cursor_direction, cursor_value)
-            if key is not None and key in seen_cursor_keys:
-                continue
-            if key is not None and key in queued_cursor_keys:
-                continue
-            cursor_queue.append((cursor_direction, cursor_value))
-            if key is not None:
-                queued_cursor_keys.add(key)
-
-        if new_count == 0 and not cursor_queue:
-            break
-
-    if conversation_id not in tweets_by_id:
-        main_tweet = fetch_tweet_by_rest_id(conversation_id)
-        if main_tweet:
-            tweets_by_id[conversation_id] = main_tweet
+    tweets_by_id = _collect_conversation_tweets(conversation_id, max_pages)
 
     if not tweets_by_id:
         raise TwitterGraphQLError(
             f"Twitter returned no conversation data for tweet {conversation_id}"
         )
+
+    children_map: Dict[str, set[str]] = {}
+    for tweet in tweets_by_id.values():
+        legacy = tweet.get("legacy", {})
+        parent_id = legacy.get("in_reply_to_status_id_str")
+        if isinstance(parent_id, str) and parent_id:
+            children_map.setdefault(parent_id, set()).add(tweet["rest_id"])
+
+    def _compute_depths(root_id: str) -> Dict[str, int]:
+        depth: Dict[str, int] = {root_id: 0}
+        queue: deque[str] = deque([root_id])
+        while queue:
+            current = queue.popleft()
+            for child in children_map.get(current, set()):
+                if child in depth:
+                    continue
+                depth[child] = depth[current] + 1
+                queue.append(child)
+        return depth
+
+    depth_by_id = _compute_depths(conversation_id)
+
+    def _reply_count(tweet: Optional[Dict[str, Any]]) -> int:
+        if not isinstance(tweet, dict):
+            return 0
+        legacy = tweet.get("legacy")
+        if not isinstance(legacy, dict):
+            return 0
+        raw_count = legacy.get("reply_count")
+        return raw_count if isinstance(raw_count, int) and raw_count > 0 else 0
+
+    def _child_count(tweet_id: str) -> int:
+        return len(children_map.get(tweet_id, set()))
+
+    def _missing_children(tweet_id: str) -> int:
+        tweet = tweets_by_id.get(tweet_id)
+        if not tweet:
+            return 0
+        return max(0, _reply_count(tweet) - _child_count(tweet_id))
+
+    MAX_BRANCH_DEPTH = 2
+    MAX_BRANCH_FETCHES = max(2, min(6, max_pages // 2 if max_pages > 1 else 2))
+    MAX_BRANCH_PAGES = max(1, min(3, max_pages))
+    MAX_MISSING_THRESHOLD = 6
+
+    pending: List[Tuple[int, int, str]] = []
+    pending_set: set[str] = set()
+    expanded: set[str] = set()
+
+    def _enqueue_if_missing(tweet_id: Optional[str]) -> None:
+        if not tweet_id:
+            return
+        if tweet_id == conversation_id:
+            return
+        if tweet_id in expanded or tweet_id in pending_set:
+            return
+        tweet = tweets_by_id.get(tweet_id)
+        if not tweet:
+            return
+        missing = _missing_children(tweet_id)
+        if missing <= 0 or missing > MAX_MISSING_THRESHOLD:
+            return
+        depth = depth_by_id.get(tweet_id, 0)
+        if depth > MAX_BRANCH_DEPTH:
+            return
+        heapq.heappush(pending, (missing, depth, tweet_id))
+        pending_set.add(tweet_id)
+
+    def _recompute_depths() -> None:
+        nonlocal depth_by_id
+        depth_by_id = _compute_depths(conversation_id)
+
+    for tweet_id in list(tweets_by_id.keys()):
+        _enqueue_if_missing(tweet_id)
+
+    branch_fetches = 0
+
+    while pending and branch_fetches < MAX_BRANCH_FETCHES:
+        missing, depth, target_id = heapq.heappop(pending)
+        pending_set.discard(target_id)
+        if target_id in expanded:
+            continue
+        expanded.add(target_id)
+
+        current_missing = _missing_children(target_id)
+        if current_missing <= 0:
+            continue
+
+        logger.debug(
+            f"Expanding conversation for tweet {target_id} "
+            f"(missing_children={current_missing}, depth={depth})"
+        )
+        branch_fetches += 1
+        branch_tweets = _collect_conversation_tweets(target_id, MAX_BRANCH_PAGES)
+
+        new_items = 0
+        for rest_id, branch_tweet in branch_tweets.items():
+            if rest_id in tweets_by_id:
+                continue
+            screen_name = _get_user_screen_name(branch_tweet)
+            if not screen_name:
+                continue
+            tweets_by_id[rest_id] = branch_tweet
+            legacy = branch_tweet.get("legacy", {})
+            parent = legacy.get("in_reply_to_status_id_str")
+            if isinstance(parent, str) and parent:
+                children_map.setdefault(parent, set()).add(rest_id)
+            new_items += 1
+
+        if new_items == 0:
+            continue
+
+        _recompute_depths()
+
+        for rest_id in branch_tweets.keys():
+            _enqueue_if_missing(rest_id)
+        _enqueue_if_missing(target_id)
 
     tweets: List[Dict[str, Any]] = list(tweets_by_id.values())
     tweets.sort(
@@ -941,7 +1067,7 @@ def convertTwitter(url, forceRefresh):
 if __name__ == "__main__":
     print(
         convertTwitter(
-            "https://x.com/metaproph3t/status/1978263082754519285##convo",
+            "https://x.com/metaproph3t/status/1979243370452258837###convo",
             forceRefresh=True,
         )
     )
