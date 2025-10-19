@@ -952,7 +952,7 @@ def json_to_html(json_data, topTweet, op_username):
     def cleanText(text, endDetailsStr):
         return (
             text.replace(endDetailsStr, "")
-            .replace("</ul>", "")
+            .replace("</div>", "")
             .replace(" ", "")
             .replace("\n", "")
         )
@@ -991,11 +991,11 @@ def json_to_html(json_data, topTweet, op_username):
         #     key=lambda x: get_longest_chain_length(x, json_data),
         #     reverse=True
         # ) ###this is 100% depth first. a bit to extreme imo, because it makes other replies less contexualised. maybe some middle ground is optimal.
-        outStr += f"{indent}<ul>\n"
+        outStr += f"{indent}<div>\n"
         sorted_children = tweet["children"]
         for childId in sorted_children:
             outStr += convert_to_html(childId, level + 1)
-        outStr += f"{indent}</ul>\n"
+        outStr += f"{indent}</div>\n"
         endsWithNotReply = False
         notReplyStr = "<br><p>END THREAD</p>\n"
         endDetailsStr = "</details>\n"
