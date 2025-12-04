@@ -45,7 +45,7 @@ logger.add(
 TMP_DIR = Path(__file__).parent / "tmp"
 TMP_DIR.mkdir(exist_ok=True)
 
-MODEL_NAME = "gpt-5.1"
+MODEL_NAME = "google/gemini-2.5-flash"
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
 DEFAULT_SUMMARISE = False
@@ -101,26 +101,82 @@ def _summarise_markdown(text: str) -> str:
     if cache_path.exists():
         return cache_path.read_text()
 
-    messages = [
-        {
-            "role": "user",
-            "content": (
-                "Summarize the following markdown into a bullet digest."
-                "Avoid embellishment:\n\n"
-                "Instructions for summarising conversations:\n\n"
-                "Preserve links, interesting technical/detailed discussions, conclusions, problems, solutions, points of disagreement, critiques, novel ideas, insights and explanations. Ignore chit chat/throw away comments, chatter, socialising, noise, random news, advertisements, content-less discussion etc. Do not leave things out just because there might be a lot of messages."
-                "Instructions for summarising other text:\n\n"
-                "Preserve all arguments, explanations, conclusions, novel ideas, insights, important context, contrarian takes, mechanistic details, rationales, implications. Keep succinct while also easy to follow."
-                "\n\nText:\n\n"
-                f"{text}"
-            ),
-        }
-    ]
+    if not text.strip():
+        return ""
 
-    summary = _call_with_retry(
-        client_factory=lambda: OpenAI(api_key=os.getenv("OPENAI_API_KEY")),
-        messages=messages,
-    ).strip()
+    chunk_size = 100_000
+    lines = text.splitlines()
+    chunks: list[str] = []
+    current_lines: list[str] = []
+    current_word_count = 0
+
+    for line in lines:
+        line_word_count = len(line.split())
+        # If a single line exceeds the chunk size, put it in its own chunk to avoid mid-line splits.
+        if line_word_count > chunk_size:
+            if current_lines:
+                chunks.append("\n".join(current_lines).strip())
+                current_lines = []
+                current_word_count = 0
+            chunks.append(line)
+            continue
+
+        if current_lines and current_word_count + line_word_count > chunk_size:
+            chunks.append("\n".join(current_lines).strip())
+            current_lines = []
+            current_word_count = 0
+
+        current_lines.append(line)
+        current_word_count += line_word_count
+
+    if current_lines:
+        chunks.append("\n".join(current_lines).strip())
+
+    total_chunks = len(chunks)
+
+    def summarise_single_chunk(chunk_text: str, index: int) -> str:
+        messages = [
+            {
+                "role": "user",
+                "content": (
+                    "Summarize the following markdown into a bullet digest."
+                    "Avoid embellishment:\n\n"
+                    "Instructions for summarising conversations:\n\n"
+                    "Preserve links, interesting technical/detailed discussions, conclusions, problems, solutions, points of disagreement, critiques, novel ideas, insights and explanations. Ignore chit chat/throw away comments, chatter, socialising, noise, random news, advertisements, content-less discussion etc. Do not leave things out just because there might be a lot of messages."
+                    "Instructions for summarising other text:\n\n"
+                    "Preserve all arguments, explanations, conclusions, novel ideas, insights, important context, contrarian takes, mechanistic details, rationales, implications. Keep succinct while also easy to follow."
+                    f"\n\nChunk {index + 1} of {total_chunks}:\n\n"
+                    f"{chunk_text}"
+                ),
+            }
+        ]
+
+        return _call_with_retry(
+            client_factory=lambda: OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+            ),
+            messages=messages,
+        ).strip()
+
+    logger.info(
+        "Summarising markdown in {} chunk(s) of up to {} words, split on newline boundaries",
+        total_chunks,
+        chunk_size,
+    )
+
+    with ThreadPoolExecutor() as executor:
+        future_to_index = {
+            executor.submit(summarise_single_chunk, chunk, idx): idx
+            for idx, chunk in enumerate(chunks)
+        }
+
+        ordered_summaries: list[str] = ["" for _ in chunks]
+        for future in as_completed(future_to_index):
+            idx = future_to_index[future]
+            ordered_summaries[idx] = future.result()
+
+    summary = "\n\n".join(ordered_summaries)
 
     cache_path.write_text(summary)
     return summary
@@ -228,7 +284,10 @@ def transcribe_mp3_chunk(client, chunk_filename, chunk_index, total_chunks):
 
 
 def transcribe_mp3(inputSource, inputUrl, audio_chunks):
-    client = OpenAI()
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+    )
     markdown_transcript = ""
     print("transcribing mp3")
     # Process chunks in parallel
