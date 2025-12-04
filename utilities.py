@@ -106,9 +106,12 @@ def _summarise_markdown(text: str) -> str:
         {
             "role": "user",
             "content": (
-                "Summarize the following markdown into a concise bullet digest. "
-                "Preserve links, topics, interesting discussions, interesting arguments, conclusions, disagreements, novel points, and explanations. Ignore chit chat/throw away comments, chatter, socialising, noise."
+                "Summarize the following markdown into a succinct bullet digest."
                 "Avoid embellishment:\n\n"
+                "Instructions for summarising conversations:\n\n"
+                "Preserve links, interesting technical/detailed discussions, conclusions, points of disagreement, novel ideas, insights and explanations. Ignore chit chat/throw away comments, chatter, socialising, noise, random news, advertisements, content-less discussion etc."
+                "Instructions for summarising other text:\n\n"
+                "Preserve all arguments, explanations, conclusions, novel ideas, insights, important context, contrarian takes, mechanistic details, rationales, implications. Keep succinct while also easy to follow."
                 f"{text}"
             ),
         }
