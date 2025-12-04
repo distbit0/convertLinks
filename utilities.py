@@ -81,7 +81,6 @@ def _call_with_retry(
                 model=MODEL_NAME,
                 input=messages,
                 reasoning={"effort": "medium"},
-                text={"verbosity": "low"},
             )
             content = resp.output_text
             if not content:
@@ -106,10 +105,10 @@ def _summarise_markdown(text: str) -> str:
         {
             "role": "user",
             "content": (
-                "Summarize the following markdown into a succinct bullet digest."
+                "Summarize the following markdown into a bullet digest."
                 "Avoid embellishment:\n\n"
                 "Instructions for summarising conversations:\n\n"
-                "Preserve links, interesting technical/detailed discussions, conclusions, points of disagreement, novel ideas, insights and explanations. Ignore chit chat/throw away comments, chatter, socialising, noise, random news, advertisements, content-less discussion etc. Do not leave things out just because there might be a lot of messages."
+                "Preserve links, interesting technical/detailed discussions, conclusions, problems, solutions, points of disagreement, critiques, novel ideas, insights and explanations. Ignore chit chat/throw away comments, chatter, socialising, noise, random news, advertisements, content-less discussion etc. Do not leave things out just because there might be a lot of messages."
                 "Instructions for summarising other text:\n\n"
                 "Preserve all arguments, explanations, conclusions, novel ideas, insights, important context, contrarian takes, mechanistic details, rationales, implications. Keep succinct while also easy to follow."
                 "\n\nText:\n\n"

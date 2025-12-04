@@ -1,18 +1,27 @@
 from os import path
 import asyncio
 import re
+from pathlib import Path
 from urllib.parse import urlparse
 import utilities
 from telethon import TelegramClient
 from telethon.tl.types import MessageEmpty
 from dotenv import load_dotenv
+from loguru import logger
 import os
+import sys
 
 load_dotenv()
 
 api_id = os.getenv("TELEGRAM_API_ID")
 api_hash = os.getenv("TELEGRAM_API_HASH")
 session_name = os.getenv("TELEGRAM_SESSION_NAME")
+
+LOG_DIR = Path(__file__).parent / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+logger.remove()
+logger.add(sys.stdout, level="INFO")
+logger.add(LOG_DIR / "telegram.log", rotation="256 KB", retention=5, enqueue=True)
 
 
 def extract_chat_id_and_message_id(url):
@@ -39,28 +48,40 @@ def extract_chat_id_and_message_id(url):
     return None, None
 
 
-async def fetch_messages(chat_id, initial_message_id, client):
-    all_messages = []
-    allMessageIds = []
-    last_message_id = initial_message_id - 1
+async def fetch_messages(chat_id, initial_message_id, client, limit=None):
+    """Fetch messages starting at the provided message id in chronological order.
 
-    while True:
-        print("getting more messages... from message id:", last_message_id)
-        messages = await client.get_messages(
-            chat_id, min_id=last_message_id, limit=1000
-        )
-        messages = [message for message in messages if message.id not in allMessageIds]
-        messages.sort(key=lambda x: x.id)
-        for message in messages:
-            print(message.id)
-        if not messages:
-            print("No messages returned this time")
-            break  # Break if no messages are returned
-        all_messages.extend(messages)
-        allMessageIds.extend([message.id for message in messages])
-        last_message_id = messages[-1].id
+    If limit is None, fetch all messages from initial_message_id to the latest.
+    """
+    messages: list = []
 
-    return all_messages
+    first_message = await client.get_messages(chat_id, ids=initial_message_id)
+    if first_message and not isinstance(first_message, MessageEmpty):
+        messages.append(first_message)
+
+    remaining_limit = None if limit is None else max(limit - len(messages), 0)
+    fetched = 0
+
+    async for message in client.iter_messages(
+        chat_id,
+        min_id=initial_message_id,
+        reverse=True,
+        limit=remaining_limit,
+    ):
+        if isinstance(message, MessageEmpty):
+            continue
+        messages.append(message)
+        fetched += 1
+        if fetched % 500 == 0:
+            logger.info("Fetched {} additional messages (last id {})", fetched, message.id)
+
+    logger.info(
+        "Fetched {} messages starting from id {} (last id {})",
+        len(messages),
+        initial_message_id,
+        messages[-1].id if messages else initial_message_id,
+    )
+    return messages
 
 
 def getAbsPath(relPath):
@@ -101,7 +122,6 @@ def createHtmlFromMessages(messagesList, originalUrl):
         if len(baseChatUrl.split("/")) > 5:
             baseChatUrl = "/".join(baseChatUrl.split("/")[:5])
         messageLink = f"{baseChatUrl}/{message.id}"
-        messageLink = messageLink.replace("https://t.me", "https://web.t.me")
 
         html += f'<p><a href="{messageLink}">{username}</a>: {content}</p>'
 
@@ -126,7 +146,7 @@ async def primary(url, client):
 
 
 def convertTelegram(url, forceRefresh):
-    print(url, forceRefresh)
+    logger.info("Converting Telegram URL: {} forceRefresh={}", url, forceRefresh)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     client = TelegramClient(session_name, api_id, api_hash, loop=loop)
@@ -136,4 +156,4 @@ def convertTelegram(url, forceRefresh):
 
 
 if __name__ == "__main__":
-    print(convertTelegram("https://t.me/thepredictionarc/52405", False))
+    logger.info(convertTelegram("https://t.me/c/2392373515/27447", False))
