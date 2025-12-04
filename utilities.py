@@ -8,7 +8,12 @@ import json
 import os
 import re
 import random
+import hashlib
+from pathlib import Path
+from typing import Callable, List, Mapping, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from loguru import logger
 
 
 def getAbsPath(relPath):
@@ -28,19 +33,114 @@ sys.path.append(getConfig()["gistWriteDir"])
 from writeGist import writeContent, getGistUrl
 
 
-def writeGist(text, name, guid=None, gist_id=None, update=True):
+LOG_DIR = Path(__file__).parent / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+logger.add(
+    LOG_DIR / "utilities.log",
+    rotation="256 KB",
+    retention=5,
+    enqueue=True,
+)
+
+TMP_DIR = Path(__file__).parent / "tmp"
+TMP_DIR.mkdir(exist_ok=True)
+
+MODEL_NAME = "gpt-5.1"
+MAX_RETRIES = 3
+RETRY_BACKOFF_SECONDS = 2
+DEFAULT_SUMMARISE = False
+
+
+class ForecastError(Exception):
+    pass
+
+
+def set_default_summarise(flag: bool) -> None:
+    global DEFAULT_SUMMARISE
+    DEFAULT_SUMMARISE = bool(flag)
+
+
+def _hash_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _cache_path_for(text: str) -> Path:
+    digest = _hash_text(text)
+    return TMP_DIR / f"{digest}.summary.txt"
+
+
+def _call_with_retry(
+    *, client_factory: Callable[[], OpenAI], messages: List[Mapping[str, str]]
+) -> str:
+    """Minimal retry wrapper for Responses API with web search enabled."""
+    last_err: Optional[Exception] = None
+    client = client_factory()
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            resp = client.responses.create(
+                model=MODEL_NAME,
+                input=messages,
+                tools=[{"type": "web_search"}],
+                reasoning={"effort": "medium"},
+                text={"verbosity": "low"},
+            )
+            content = resp.output_text
+            if not content:
+                raise ForecastError("Empty response from model.")
+            return content
+        except Exception as exc:  # noqa: PERF203 (retries are bounded)
+            last_err = exc
+            logger.warning(
+                "GPT call failed (attempt {}/{}): {}", attempt, MAX_RETRIES, exc
+            )
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_BACKOFF_SECONDS * attempt)
+    raise ForecastError(f"GPT call failed after retries: {last_err}")
+
+
+def _summarise_markdown(text: str) -> str:
+    cache_path = _cache_path_for(text)
+    if cache_path.exists():
+        return cache_path.read_text()
+
+    messages = [
+        {
+            "role": "user",
+            "content": (
+                "Summarize the following markdown into a concise bullet digest. "
+                "Preserve key data points, decisions, action items, and links. "
+                "Avoid embellishment and keep it short:\n\n"
+                f"{text}"
+            ),
+        }
+    ]
+
+    summary = _call_with_retry(
+        client_factory=lambda: OpenAI(api_key=os.getenv("OPENAI_API_KEY")),
+        messages=messages,
+    ).strip()
+
+    cache_path.write_text(summary)
+    return summary
+
+
+def writeGist(text, name, guid=None, gist_id=None, update=True, summarise=None):
+    actual_summarise = DEFAULT_SUMMARISE if summarise is None else bool(summarise)
+    adjusted_guid = f"{guid}_summary" if actual_summarise and guid else guid
+    text_to_write = _summarise_markdown(text) if actual_summarise else text
+
     deleteMp3sOlderThan(60 * 60 * 12, getAbsPath("tmp/"))
     if not update:
-        gistUrl = getGistUrl(guid)
+        gistUrl = getGistUrl(adjusted_guid)
         if gistUrl:
             return gistUrl
     unixTime = str(int(time.time()))
     randomNumber = str(random.randint(1000000000, 9999999999))
     tmpFile = getAbsPath(f"tmp/{unixTime}.{randomNumber}.txt")
     with open(tmpFile, "w") as f:
-        f.write(text)
+        f.write(text_to_write)
     gistUrl = "https://gist.github.com/" + gist_id if gist_id else None
-    gistUrl = writeContent(gistUrl, guid, name, tmpFile)
+    gistUrl = writeContent(gistUrl, adjusted_guid, name, tmpFile)
     os.remove(tmpFile)
     if "https://gist.github.com/" in gistUrl:
         return gistUrl.strip()

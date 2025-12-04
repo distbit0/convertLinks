@@ -1,4 +1,5 @@
 import re
+import argparse
 import subprocess
 import json
 import threading
@@ -8,6 +9,7 @@ from convertTelegram import convertTelegram
 from convertYoutube import convertYoutube
 from convertPodcast import convertPodcast
 from convertGitbook import convertGitbook
+from convertDiscourse import convertDiscourse
 from convertSoundcloud import convertSoundcloud
 from convertMp4 import convertMp4
 from convertMp3 import convertMp3
@@ -18,6 +20,7 @@ import traceback
 import os
 import pyperclip
 from tkinter import Tk, messagebox
+import utilities
 
 
 def get_selected_text():
@@ -88,22 +91,6 @@ def convertMedium(url, forceRefresh):
     return url
 
 
-def convertDiscourse(url, forceRefresh):
-    tempUrl = str(url)
-    if tempUrl[-1] != "/":
-        tempUrl += "/"
-    if re.search(r"(\/t\/[^\/]*\/\d+\/)", tempUrl):
-        if re.search(r"(t\/[^\/]*\/\d+\/)$", tempUrl):
-            tempUrl += "print"
-        if re.search(r"(t\/[^\/]*\/\d+\/)(([a-z]+|\d+)\/)$", tempUrl):
-            tempUrl = re.sub(
-                r"(t\/[^\/]*\/\d+\/)(([a-z]+|\d+)\/)$", r"\1print", tempUrl
-            )
-    else:
-        tempUrl = str(url)
-    return tempUrl
-
-
 def convertLesswrong(url, forceRefresh):
     url = url.replace("lesswrong.com", "greaterwrong.com").strip()
     return url
@@ -151,7 +138,7 @@ conversion_functions = {
 
 
 # @pysnooper.snoop()
-def process_url(originalUrl, openInBrowser, openingToRead):
+def process_url(originalUrl, openInBrowser, forceConvertAllUrls):
     try:
         url = str(originalUrl)
         for key, value in conversion_functions.items():
@@ -160,7 +147,7 @@ def process_url(originalUrl, openInBrowser, openingToRead):
                 alwaysConvert = value["alwaysConvert"]
                 forceConvert = "##" in url
                 forceRefresh = "###" in url
-                if alwaysConvert or openingToRead or forceConvert:
+                if alwaysConvert or forceConvertAllUrls or forceConvert:
                     # print("converting url", url, "with function", func.__name__)
                     url = func(url, forceRefresh)
     except Exception as e:
@@ -181,8 +168,8 @@ def process_url(originalUrl, openInBrowser, openingToRead):
             return url
 
 
-# @pysnooper.snoop()
-def main(text, openInBrowser, openingToRead):
+def main(text, openInBrowser, forceConvertAllUrls, summarise=False):
+    utilities.set_default_summarise(summarise)
     textFromClipboard = not bool(text)
     selected_text = get_selected_text() if textFromClipboard else text
     if selected_text is None:
@@ -190,14 +177,14 @@ def main(text, openInBrowser, openingToRead):
 
     urls = find_urls_in_text(selected_text)
     # if len(urls) > 1:
-    #     openingToRead = True  # the fact that multiple are being opened is an indication that the intent may be to open them in @voice
+    #     forceConvertAllUrls = True  # the fact that multiple are being opened is an indication that the intent may be to open them in @voice
     processed_urls = []
 
     threads = []
     for url in urls:
         thread = threading.Thread(
             target=lambda u: processed_urls.append(
-                process_url(u, openInBrowser, openingToRead)
+                process_url(u, openInBrowser, forceConvertAllUrls)
             ),
             args=(url,),
         )
@@ -217,4 +204,32 @@ def main(text, openInBrowser, openingToRead):
 
 
 if __name__ == "__main__":
-    main(None, openInBrowser=True, openingToRead=False)
+    parser = argparse.ArgumentParser(description="Convert and normalize URLs.")
+    parser.add_argument(
+        "text",
+        nargs="?",
+        help="Text or URL(s). If omitted, clipboard contents are used.",
+    )
+    parser.add_argument(
+        "--force-convert-all",
+        action="store_true",
+        help="Force conversion for all URLs, even if not marked alwaysConvert.",
+    )
+    parser.add_argument(
+        "--summarise",
+        action="store_true",
+        help="Summarize markdown before writing gists.",
+    )
+    parser.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Do not open processed URLs in the browser.",
+    )
+    args = parser.parse_args()
+
+    main(
+        args.text,
+        openInBrowser=not args.no_open,
+        forceConvertAllUrls=args.force_convert_all,
+        summarise=args.summarise,
+    )
