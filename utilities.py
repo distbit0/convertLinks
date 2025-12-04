@@ -45,7 +45,7 @@ logger.add(
 TMP_DIR = Path(__file__).parent / "tmp"
 TMP_DIR.mkdir(exist_ok=True)
 
-MODEL_NAME = "google/gemini-2.5-flash"
+MODEL_NAME = "x-ai/grok-4.1-fast"
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
 DEFAULT_SUMMARISE = False
