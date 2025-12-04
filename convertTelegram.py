@@ -112,3 +112,7 @@ def convertTelegram(url, forceRefresh):
     with client:
         urlToOpen = client.loop.run_until_complete(primary(url, client))
     return urlToOpen
+
+
+if __name__ == "__main__":
+    convertTelegram("https://t.me/c/2675182655/576", False)

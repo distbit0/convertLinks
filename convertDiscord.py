@@ -44,8 +44,30 @@ def fetch_messages(channel_id, initial_message_id):
     if os.path.exists(cache_file):
         with open(cache_file, "r") as f:
             cache_data = json.load(f)
-            all_messages = cache_data.get("messages", [])
-            last_message_id = cache_data.get("latest_message_id", initial_message_id)
+
+        cached_messages = cache_data.get("messages", [])
+
+        # Keep only cached messages at or after the requested starting message.
+        try:
+            initial_id_int = int(initial_message_id)
+            filtered_cached_messages = [
+                msg
+                for msg in cached_messages
+                if int(msg.get("id", 0)) >= initial_id_int
+            ]
+        except ValueError:
+            # If IDs are not numeric, fall back to using the provided cache without filtering.
+            filtered_cached_messages = cached_messages
+
+        all_messages = filtered_cached_messages
+
+        # Resume fetching from the newest kept message, or the initial ID if none remain.
+        if filtered_cached_messages:
+            last_message_id = max(
+                filtered_cached_messages, key=lambda msg: int(msg.get("id", 0))
+            ).get("id", initial_message_id)
+        else:
+            last_message_id = initial_message_id
 
     while True:
         time.sleep(1.5)  # avoid rate limit
