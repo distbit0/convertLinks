@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 from loguru import logger
@@ -29,6 +30,12 @@ def _build_markdown_url(url: str) -> str:
     return sanitized if sanitized.endswith(".md") else f"{sanitized}.md"
 
 
+def _is_domain_only(url: str) -> bool:
+    parsed = urlparse(url)
+    path = parsed.path or ""
+    return path in ("", "/")
+
+
 def _extract_title(markdown_content: str, fallback: str) -> str:
     for line in markdown_content.splitlines():
         if line.startswith("# "):
@@ -38,6 +45,8 @@ def _extract_title(markdown_content: str, fallback: str) -> str:
 
 def convertGitbook(url, forceRefresh):
     if "docs.google.com" in url:
+        return url
+    if _is_domain_only(url):
         return url
     url = re.sub(r"#.*", "", url)  # Remove #comments from the URL
     unique_url = getUniqueUrl(url)

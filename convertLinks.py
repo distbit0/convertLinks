@@ -179,7 +179,7 @@ def main(text, openInBrowser, forceConvertAllUrls, summarise=False):
     # if len(urls) > 1:
     #     forceConvertAllUrls = True  # the fact that multiple are being opened is an indication that the intent may be to open them in @voice
     processed_urls = []
-
+    print("urls", urls)
     threads = []
     for url in urls:
         thread = threading.Thread(
@@ -195,7 +195,7 @@ def main(text, openInBrowser, forceConvertAllUrls, summarise=False):
         thread.join()
 
     processed_urls = [url for url in processed_urls if url]
-
+    print("processed_urls", processed_urls)
     if openInBrowser:
         for url in processed_urls:
             open_in_browser(url)
