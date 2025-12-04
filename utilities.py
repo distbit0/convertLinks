@@ -45,7 +45,7 @@ logger.add(
 TMP_DIR = Path(__file__).parent / "tmp"
 TMP_DIR.mkdir(exist_ok=True)
 
-MODEL_NAME = "x-ai/grok-4.1-fast"
+MODEL_NAME = "openai/gpt-5.1"
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
 DEFAULT_SUMMARISE = False
