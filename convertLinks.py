@@ -120,7 +120,7 @@ conversion_functions = {
     "soundcloud.com": {"function": convertSoundcloud, "alwaysConvert": False},
     "streameth.org": {"function": convertStreameth, "alwaysConvert": False},
     "docs.": {"function": convertGitbook, "alwaysConvert": True},
-    "/status/": {"function": convertTwitter, "alwaysConvert": False},
+    "/status/": {"function": convertTwitter, "alwaysConvert": True},
     "docs.google.com/document/": {
         "function": convertGDocs,
         "alwaysConvert": False,
