@@ -44,7 +44,11 @@ def convertMp3(mp3_url, forceRefresh):
     audio_chunks = utilities.chunk_mp3(mp3_file)
     transcript = utilities.transcribe_mp3(inputSource, mp3_url, audio_chunks)
     gist_url = utilities.writeGist(
-        transcript, f"{inputSource}: " + name, identifier, update=True
+        transcript,
+        f"{inputSource}: " + name,
+        identifier,
+        update=True,
+        source_url=mp3_url,
     )
 
     return gist_url

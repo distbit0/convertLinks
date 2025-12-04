@@ -57,7 +57,11 @@ def convertRumble(video_url, forceRefresh):
     audio_chunks = utilities.chunk_mp3(mp3_file)
     transcript = utilities.transcribe_mp3(inputSource, video_url, audio_chunks)
     gist_url = utilities.writeGist(
-        transcript, f"{inputSource}: " + title, videoId, update=True
+        transcript,
+        f"{inputSource}: " + title,
+        videoId,
+        update=True,
+        source_url=video_url,
     )
 
     return gist_url

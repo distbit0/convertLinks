@@ -76,6 +76,10 @@ def convertPodcast(episode_url, forceRefresh):
     audio_chunks = utilities.chunk_mp3(mp3_file)
     transcript = utilities.transcribe_mp3(inputSource, episode_url, audio_chunks)
     gist_url = utilities.writeGist(
-        transcript, f"{inputSource}: " + title, episodeId, update=True
+        transcript,
+        f"{inputSource}: " + title,
+        episodeId,
+        update=True,
+        source_url=episode_url,
     )
     return gist_url

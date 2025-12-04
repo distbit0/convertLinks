@@ -1054,11 +1054,14 @@ def convertTwitter(url, forceRefresh):
             f"Operator tweet missing screen_name for conversation {tweet_id}"
         )
     replies = parseReplies(rawReplies, op_username, highQuality)
-    html = f'<a href="{url}">Original</a><br><br>' + json_to_html(
-        replies, tweet_id, op_username
-    )
+    html = json_to_html(replies, tweet_id, op_username)
     title = replies[tweet_id]["text"][:50]
-    urlToOpen = utilities.writeGist(html, "TWTR: " + title, tweet_id)
+    urlToOpen = utilities.writeGist(
+        html,
+        "TWTR: " + title,
+        tweet_id,
+        source_url=url,
+    )
     return urlToOpen
 
 

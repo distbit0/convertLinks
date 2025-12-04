@@ -71,11 +71,14 @@ def convertDiscourse(url: str, forceRefresh: bool):
         logger.error(f"Received empty markdown response from {raw_url}")
         return False
 
-    markdown_content = f"[Original]({url})\n\n{markdown_content}"
     title = _extract_title(markdown_content, unique_url)
 
     gist_url = utilities.writeGist(
-        markdown_content, "DISC: " + title, unique_url, update=True
+        markdown_content,
+        "DISC: " + title,
+        unique_url,
+        update=True,
+        source_url=url,
     )
     return gist_url
 

@@ -80,7 +80,6 @@ def _call_with_retry(
             resp = client.responses.create(
                 model=MODEL_NAME,
                 input=messages,
-                tools=[{"type": "web_search"}],
                 reasoning={"effort": "medium"},
                 text={"verbosity": "low"},
             )
@@ -108,8 +107,8 @@ def _summarise_markdown(text: str) -> str:
             "role": "user",
             "content": (
                 "Summarize the following markdown into a concise bullet digest. "
-                "Preserve key data points, decisions, action items, and links. "
-                "Avoid embellishment and keep it short:\n\n"
+                "Preserve links, topics, interesting discussions, interesting arguments, conclusions, disagreements, novel points, and explanations. Ignore chit chat/throw away comments, chatter, socialising, noise."
+                "Avoid embellishment:\n\n"
                 f"{text}"
             ),
         }
@@ -124,10 +123,21 @@ def _summarise_markdown(text: str) -> str:
     return summary
 
 
-def writeGist(text, name, guid=None, gist_id=None, update=True, summarise=None):
+def writeGist(
+    text,
+    name,
+    guid=None,
+    gist_id=None,
+    update=True,
+    summarise=None,
+    source_url: str | None = None,
+):
     actual_summarise = DEFAULT_SUMMARISE if summarise is None else bool(summarise)
     adjusted_guid = f"{guid}_summary" if actual_summarise and guid else guid
+
     text_to_write = _summarise_markdown(text) if actual_summarise else text
+    if source_url:
+        text_to_write = f"[Original]({source_url})\n\n{text_to_write}"
 
     deleteMp3sOlderThan(60 * 60 * 12, getAbsPath("tmp/"))
     if not update:
@@ -191,6 +201,7 @@ def chunk_mp3(mp3_file):
 
     return file_paths
 
+
 ### might be worthwhile to modify this so it includes timestamps in the output even if they are not clickable
 def transcribe_mp3_chunk(client, chunk_filename, chunk_index, total_chunks):
     print(f"transcribing chunk {chunk_index + 1} of {total_chunks}")
@@ -209,34 +220,31 @@ def transcribe_mp3_chunk(client, chunk_filename, chunk_index, total_chunks):
     return {
         "filename": chunk_filename,
         "transcript": transcript,
-        "chunk_index": chunk_index
+        "chunk_index": chunk_index,
     }
+
 
 def transcribe_mp3(inputSource, inputUrl, audio_chunks):
     client = OpenAI()
-    markdown_transcript = f"[Original]({inputUrl})\n\n"
+    markdown_transcript = ""
     print("transcribing mp3")
     # Process chunks in parallel
     with ThreadPoolExecutor() as executor:
         futures = [
             executor.submit(
-                transcribe_mp3_chunk,
-                client,
-                chunk_filename,
-                i,
-                len(audio_chunks)
+                transcribe_mp3_chunk, client, chunk_filename, i, len(audio_chunks)
             )
             for i, chunk_filename in enumerate(audio_chunks)
         ]
-        
+
         # Collect results in order
         results = []
         for future in as_completed(futures):
             results.append(future.result())
-        
+
         # Sort results by chunk index to maintain original order
         results.sort(key=lambda x: x["chunk_index"])
-        
+
         # Process results in order
         for result in results:
             markdown_transcript += result["transcript"] + "\n\n"

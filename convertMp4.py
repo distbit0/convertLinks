@@ -51,7 +51,11 @@ def convertMp4(mp4_url, forceRefresh):
     audio_chunks = utilities.chunk_mp3(mp3_file)
     transcript = utilities.transcribe_mp3(inputSource, mp4_url, audio_chunks)
     gist_url = utilities.writeGist(
-        transcript, f"{inputSource}: " + name, mp4Id, update=True
+        transcript,
+        f"{inputSource}: " + name,
+        mp4Id,
+        update=True,
+        source_url=mp4_url,
     )
 
     return gist_url

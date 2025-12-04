@@ -1,6 +1,7 @@
 from os import path
 import asyncio
 import re
+from urllib.parse import urlparse
 import utilities
 from telethon import TelegramClient
 from telethon.tl.types import MessageEmpty
@@ -16,11 +17,25 @@ session_name = os.getenv("TELEGRAM_SESSION_NAME")
 
 def extract_chat_id_and_message_id(url):
     # Extract the chat ID and message ID from the URL
-    parts = url.split("/")
-    if len(parts) >= 6 and parts[3] == "c":
-        chat_id = int(parts[4])
-        message_id = int(parts[5])
-        return chat_id, message_id
+    parsed_url = urlparse(url)
+    path_parts = [part for part in parsed_url.path.split("/") if part]
+
+    try:
+        # Private/supergroup links: https://t.me/c/<chat_id>/<message_id>
+        if len(path_parts) >= 3 and path_parts[0] == "c":
+            chat_id = int(path_parts[1])
+            message_id = int(path_parts[2])
+            return chat_id, message_id
+
+        # Public channel/group links: https://t.me/<chat_username>/<message_id>
+        if len(path_parts) >= 2 and path_parts[1].isdigit():
+            chat_id = path_parts[0]
+            message_id = int(path_parts[1])
+            return chat_id, message_id
+    except ValueError:
+        # If casting to int fails, treat as invalid
+        pass
+
     return None, None
 
 
@@ -73,7 +88,7 @@ def createHtmlFromMessages(messagesList, originalUrl):
                 firstMsg = extractedText
         i += 1
 
-    html = f'<p><a href="{originalUrl}">Original</a></p>'
+    html = ""
 
     for message in messagesList:
         # Skip empty messages
@@ -99,13 +114,19 @@ async def primary(url, client):
         await client.get_dialogs()
         all_messages = await fetch_messages(chat_id, message_id, client)
         html, firstMsg = createHtmlFromMessages(all_messages, url)
-        urlToOpen = utilities.writeGist(html, "TG: " + firstMsg, str(message_id))
+        urlToOpen = utilities.writeGist(
+            html,
+            "TG: " + firstMsg,
+            str(message_id),
+            source_url=url,
+        )
         return urlToOpen
     else:
         return url
 
 
 def convertTelegram(url, forceRefresh):
+    print(url, forceRefresh)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     client = TelegramClient(session_name, api_id, api_hash, loop=loop)
@@ -115,4 +136,4 @@ def convertTelegram(url, forceRefresh):
 
 
 if __name__ == "__main__":
-    convertTelegram("https://t.me/c/2675182655/576", False)
+    print(convertTelegram("https://t.me/thepredictionarc/52405", False))

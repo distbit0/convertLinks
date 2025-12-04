@@ -61,7 +61,7 @@ def convertYoutube(video_url, forceRefresh):
     except Exception as e:
         logger.error(f"Failed to fetch transcript for video {videoId}: {e}")
         return None
-    markdown_transcript = f"[Original]({video_url})\n\n"
+    markdown_transcript = ""
     group = []
     group_word_count = 0
     group_start_time = None
@@ -90,7 +90,11 @@ def convertYoutube(video_url, forceRefresh):
         logger.error(f"Failed to get title for video {videoId}: {e}")
         title = "Title not found"
     gist_url = utilities.writeGist(
-        markdown_transcript, f"{inputSource}: " + title, videoId, update=True
+        markdown_transcript,
+        f"{inputSource}: " + title,
+        videoId,
+        update=True,
+        source_url=video_url,
     )
     return gist_url
 
