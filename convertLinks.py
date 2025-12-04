@@ -139,7 +139,7 @@ conversion_functions = {
         "alwaysConvert": False,
     },
     "https://t.me/c/": {"function": convertTelegram, "alwaysConvert": False},
-    "discord.com": {"function": convertDiscord, "alwaysConvert": False},
+    "discord.com": {"function": convertDiscord, "alwaysConvert": True},
     "gitbook": {"function": convertGitbook, "alwaysConvert": True},
     "m.wikipedia.org": {"function": convertWikipedia, "alwaysConvert": True},
     "reddit.com": {"function": convertReddit, "alwaysConvert": True},
