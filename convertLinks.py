@@ -138,18 +138,19 @@ conversion_functions = {
 
 
 # @pysnooper.snoop()
-def process_url(originalUrl, openInBrowser, forceConvertAllUrls):
+def process_url(originalUrl, openInBrowser, forceConvertAllUrls, forceNoConvert=False):
     try:
         url = str(originalUrl)
-        for key, value in conversion_functions.items():
-            if url and key in url:
-                func = value["function"]
-                alwaysConvert = value["alwaysConvert"]
-                forceConvert = "##" in url
-                forceRefresh = "###" in url
-                if alwaysConvert or forceConvertAllUrls or forceConvert:
-                    # print("converting url", url, "with function", func.__name__)
-                    url = func(url, forceRefresh)
+        if not forceNoConvert:
+            for key, value in conversion_functions.items():
+                if url and key in url:
+                    func = value["function"]
+                    alwaysConvert = value["alwaysConvert"]
+                    forceConvert = "##" in url
+                    forceRefresh = "###" in url
+                    if alwaysConvert or forceConvertAllUrls or forceConvert:
+                        # print("converting url", url, "with function", func.__name__)
+                        url = func(url, forceRefresh)
     except Exception as e:
         print(e)
         traceback.print_exc()
@@ -168,7 +169,9 @@ def process_url(originalUrl, openInBrowser, forceConvertAllUrls):
             return url
 
 
-def main(text, openInBrowser, forceConvertAllUrls, summarise=False):
+def main(
+    text, openInBrowser, forceConvertAllUrls, summarise=False, forceNoConvert=False
+):
     utilities.set_default_summarise(summarise)
     textFromClipboard = not bool(text)
     selected_text = get_selected_text() if textFromClipboard else text
@@ -184,7 +187,7 @@ def main(text, openInBrowser, forceConvertAllUrls, summarise=False):
     for url in urls:
         thread = threading.Thread(
             target=lambda u: processed_urls.append(
-                process_url(u, openInBrowser, forceConvertAllUrls)
+                process_url(u, openInBrowser, forceConvertAllUrls, forceNoConvert)
             ),
             args=(url,),
         )
@@ -225,6 +228,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Do not open processed URLs in the browser.",
     )
+    parser.add_argument(
+        "--force-no-convert",
+        action="store_true",
+        help="Skip conversion for all URLs, even those marked to always convert.",
+    )
     args = parser.parse_args()
 
     main(
@@ -232,4 +240,5 @@ if __name__ == "__main__":
         openInBrowser=not args.no_open,
         forceConvertAllUrls=args.force_convert_all,
         summarise=args.summarise,
+        forceNoConvert=args.force_no_convert,
     )

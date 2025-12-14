@@ -46,6 +46,8 @@ def _extract_title(markdown_content: str, fallback: str) -> str:
 def convertGitbook(url, forceRefresh):
     if "docs.google.com" in url:
         return url
+    if ".pdf" in url:
+        return url
     if _is_domain_only(url):
         return url
     url = re.sub(r"#.*", "", url)  # Remove #comments from the URL
