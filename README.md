@@ -28,23 +28,11 @@ Supported conversions include:
 uv run --env-file .env -m convertlinks [text-or-url]
 ```
 Options:
-- `--no-open`      Don’t open results in a browser.
-- `--force-convert-all`  Convert all URLs even if they’re not in the always-convert list.
 - `--force-no-convert`   Skip conversion for all URLs.
 - `--summarise`    Summarize markdown before writing gists.
 
 Hidden behaviors:
-- Add `##` in a URL to force conversion of that URL.
 - Add `###` in a URL to force refresh even if a gist already exists.
-
-## Project layout
-- `src/convertlinks/` — core code and CLI entrypoint.
-- `data/` — gist ID mappings and content hash cache.
-
-## Required files & setup
-- `data/guidsToGistIds.json` and `data/textCacheHashes.json` (in this repo)
-  - Used to map content IDs to Gist IDs and avoid unnecessary updates.
-  - These are created automatically if missing.
 
 ## Environment variables (.env)
 Put these in this repo’s `.env` (loaded via `python-dotenv`):
@@ -52,11 +40,8 @@ Put these in this repo’s `.env` (loaded via `python-dotenv`):
 Required for core functionality:
 - `gh_api_key` – GitHub personal access token with Gist scope (used by `writeGist`).
 
-Required for audio/video transcription:
-- `OPENAI_API_KEY` – used for Whisper transcription.
-
-Required only if you use `--summarise`:
-- `OPENROUTER_API_KEY` – used for GPT summarization via OpenRouter.
+Required for audio/video transcription and summarisation:
+- `OPENAI_API_KEY` – used for Whisper transcription and GPT summarization.
 
 Required for specific sources:
 - Discord: `DISCORD_AUTH_TOKEN`
@@ -70,9 +55,9 @@ Notes:
 
 ## External tools (system dependencies)
 - `ffmpeg` – required by `pydub` and `yt-dlp` for audio conversion.
-- `xdg-open` – used to open URLs in the browser (Linux).
-- `notify-send` – used for error popups on failures.
-- Clipboard helper for `pyperclip` (X11): `xclip` or `xsel` (or `wl-clipboard` on Wayland).
+- Clipboard helper for `pyperclip`:
+  - Linux (X11): `xclip` or `xsel` (or `wl-clipboard` on Wayland)
+  - macOS: `pbcopy`/`pbpaste` (built-in)
 
 ## Python dependencies used by convertLinks path
 Installed via `uv sync` from `pyproject.toml`. Key runtime packages:
@@ -84,7 +69,3 @@ Installed via `uv sync` from `pyproject.toml`. Key runtime packages:
 - `yt-dlp` (Rumble)
 - `soundcloud-lib`
 - `python-dateutil` (Discord timestamps)
-
-## Output
-- Gists are created/updated via the internal gist writer and returned as URLs.
-- Temporary files are written to `tmp/` and logs to `logs/`.
