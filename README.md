@@ -2,7 +2,7 @@
 
 Lineate converts X, Discord, Telegram, or podcast conversations into a linear article or summary from a single link.
 
-## What it does (user perspective)
+## What it does
 - Paste a link (or any text containing links) and get back cleaned/converted URLs.
 - For supported sources, it fetches content/transcripts and writes them to a private GitHub Gist, returning the gist URL.
 - By default it opens the processed URL(s) in your browser.
@@ -60,7 +60,7 @@ How to get each key (links + minimal steps):
 - Discord (`DISCORD_AUTH_TOKEN`) — **unofficial**: extract your user token from the browser’s developer tools (Network → request headers → `Authorization`). Doc: [discordpy-self “Authenticating”](https://discordpy-self.readthedocs.io/en/latest/authenticating.html).
 - Twitter/X (`TWITTER_BEARER_TOKEN`, `TWITTER_CT0_TOKEN`, `TWITTER_COOKIE`) — **unofficial**: use browser devtools on x.com to copy cookies (`auth_token`, `ct0`) and the request `Authorization: Bearer ...` header. Docs: [Export X cookies (auth_token, ct0)](https://readybot.io/help/how-to/find-x-twitter-authentication-token), [Extract Bearer token from request headers](https://gist.github.com/jonathansampson/2814580886e5a5e2d0aaecd32794d53c).
 
-## External tools (system dependencies)
+## System dependencies
 - `ffmpeg` – required by `pydub` and `yt-dlp` for audio conversion.
 - `yt-dlp` – required for some sources (e.g., Rumble).
 - Clipboard helper for `pyperclip`:
