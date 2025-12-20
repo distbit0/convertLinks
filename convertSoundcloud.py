@@ -42,7 +42,7 @@ def convertSoundcloud(episode_url, forceRefresh):
     gistUrl = utilities.get_gist_url_for_guid(episodeId)
     if gistUrl and not forceRefresh:
         return gistUrl
-    mp3_file, title = download_podcast_episode(episode_url, 0.8)
+    mp3_file, title = download_podcast_episode(episode_url)
     audio_chunks = utilities.chunk_mp3(mp3_file)
     if not audio_chunks:
         return None
