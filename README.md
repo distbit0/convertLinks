@@ -1,6 +1,6 @@
 # lineate
 
-Lineate turns links (or clipboard text) into cleaner, more readable outputs, then optionally opens the result in your browser.
+Lineate turns even huge Twitter/X, Discord, Telegram, or podcast conversations into a clean linear article or GPT summary from a single link (or your clipboard).
 
 ## What it does (user perspective)
 - Paste a link (or any text containing links) and get back cleaned/converted URLs.
