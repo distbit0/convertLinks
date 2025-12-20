@@ -1,6 +1,6 @@
 # lineate
 
-Lineate converts X, Discord, Telegram, or podcast conversations into a linear article or summary from a single link.
+Lineate converts X, Discord, Telegram, Youtube or Apple podcast conversations into a linear article or summary for easier reading.
 
 ## What it does
 - Paste a link (or any text containing links) and get back cleaned/converted URLs.
