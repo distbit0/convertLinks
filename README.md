@@ -20,12 +20,12 @@ Supported conversions include:
 2) Ensure external tools are installed (see below).
 3) Fill in `.env` with required keys.
 4) Run:
-   - `uv run --env-file .env convertLinks.py "https://..."`
+   - `uv run --env-file .env -m convertlinks "https://..."`
    - or just run with no args to use the clipboard.
 
 ## Usage
 ```bash
-uv run --env-file .env convertLinks.py [text-or-url]
+uv run --env-file .env -m convertlinks [text-or-url]
 ```
 Options:
 - `--no-open`      Don’t open results in a browser.
@@ -37,12 +37,14 @@ Hidden behaviors:
 - Add `##` in a URL to force conversion of that URL.
 - Add `###` in a URL to force refresh even if a gist already exists.
 
+## Project layout
+- `src/convertlinks/` — core code and CLI entrypoint.
+- `data/` — gist ID mappings and content hash cache.
+
 ## Required files & setup
-- `config.json` (in this repo)
-  - `gistWriteDir` must point to the local `writeGist` repo (see below).
-- `writeGist` repo
-  - This project imports `writeGist.py` from the path in `config.json`.
-  - Required files in that repo: `data/guidsToGistIds.json` and `data/textCacheHashes.json`.
+- `data/guidsToGistIds.json` and `data/textCacheHashes.json` (in this repo)
+  - Used to map content IDs to Gist IDs and avoid unnecessary updates.
+  - These are created automatically if missing.
 
 ## Environment variables (.env)
 Put these in this repo’s `.env` (loaded via `python-dotenv`):
@@ -84,5 +86,5 @@ Installed via `uv sync` from `pyproject.toml`. Key runtime packages:
 - `python-dateutil` (Discord timestamps)
 
 ## Output
-- Gists are created/updated via the local `writeGist` repo and returned as URLs.
+- Gists are created/updated via the internal gist writer and returned as URLs.
 - Temporary files are written to `tmp/` and logs to `logs/`.
