@@ -53,6 +53,13 @@ Notes:
 - Telethon will create a `.session` file named after `TELEGRAM_SESSION_NAME` in the repo.
 - Twitter/X credentials need to be refreshed if the session expires.
 
+How to get each key (links + minimal steps):
+- `gh_api_key`: create a GitHub personal access token (fine-grained or classic). For fine-grained, grant User permissions → Gists (read/write). Docs: [Creating a personal access token](https://docs.github.com/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token), [Gists permission scope](https://docs.github.com/en/rest/overview/permissions-required-for-fine-grained-personal-access-tokens#user-permissions-for-gists).
+- `OPENAI_API_KEY`: create/view your key in the OpenAI API keys page. Doc: [Where do I find my OpenAI API key?](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key).
+- Telegram (`TELEGRAM_API_ID`, `TELEGRAM_API_HASH`): create an app on Telegram’s developer portal and copy the values from API development tools. Doc: [Creating your Telegram Application](https://core.telegram.org/api/obtaining_api_id).
+- Discord (`DISCORD_AUTH_TOKEN`) — **unofficial**: extract your user token from the browser’s developer tools (Network → request headers → `Authorization`). Doc: [discordpy-self “Authenticating”](https://discordpy-self.readthedocs.io/en/latest/authenticating.html).
+- Twitter/X (`TWITTER_BEARER_TOKEN`, `TWITTER_CT0_TOKEN`, `TWITTER_COOKIE`) — **unofficial**: use browser devtools on x.com to copy cookies (`auth_token`, `ct0`) and the request `Authorization: Bearer ...` header. Docs: [Export X cookies (auth_token, ct0)](https://readybot.io/help/how-to/find-x-twitter-authentication-token), [Extract Bearer token from request headers](https://gist.github.com/jonathansampson/2814580886e5a5e2d0aaecd32794d53c).
+
 ## External tools (system dependencies)
 - `ffmpeg` – required by `pydub` and `yt-dlp` for audio conversion.
 - Clipboard helper for `pyperclip`:
