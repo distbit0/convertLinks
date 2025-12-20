@@ -8,19 +8,19 @@ import pyperclip
 from tkinter import Tk, messagebox
 import webbrowser
 
-from .convertDiscord import convertDiscord
-from .convertDiscourse import convertDiscourse
-from .convertGitbook import convertGitbook
-from .convertMp3 import convertMp3
-from .convertMp4 import convertMp4
-from .convertPodcast import convertPodcast
-from .convertRumble import convertRumble
-from .convertSoundcloud import convertSoundcloud
-from .convertStreameth import convertStreameth
-from .convertTelegram import convertTelegram
-from .convertTwitter import convertTwitter
-from .convertYoutube import convertYoutube
-from . import utilities
+from convertDiscord import convertDiscord
+from convertDiscourse import convertDiscourse
+from convertGitbook import convertGitbook
+from convertMp3 import convertMp3
+from convertMp4 import convertMp4
+from convertPodcast import convertPodcast
+from convertRumble import convertRumble
+from convertSoundcloud import convertSoundcloud
+from convertStreameth import convertStreameth
+from convertTelegram import convertTelegram
+from convertTwitter import convertTwitter
+from convertYoutube import convertYoutube
+import utilities
 
 
 def get_selected_text():

@@ -9,7 +9,7 @@ from loguru import logger
 import os
 import sys
 
-from . import utilities
+import utilities
 
 load_dotenv()
 
@@ -17,7 +17,7 @@ api_id = os.getenv("TELEGRAM_API_ID")
 api_hash = os.getenv("TELEGRAM_API_HASH")
 session_name = os.getenv("TELEGRAM_SESSION_NAME")
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 logger.remove()

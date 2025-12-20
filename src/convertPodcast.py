@@ -8,11 +8,11 @@ import requests
 from html import unescape
 from pathlib import Path
 
-from . import utilities
+import utilities
 
 load_dotenv()
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def get_podcast_episode_info(url):

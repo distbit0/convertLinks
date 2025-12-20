@@ -12,11 +12,11 @@ from dotenv import load_dotenv
 from loguru import logger
 from http.cookies import SimpleCookie
 
-from . import utilities
+import utilities
 
 load_dotenv()
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 logger.add(

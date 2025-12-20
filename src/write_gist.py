@@ -13,7 +13,7 @@ load_dotenv()
 
 gh_api_key = os.getenv("gh_api_key")
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = REPO_ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
 GUIDS_PATH = DATA_DIR / "guidsToGistIds.json"

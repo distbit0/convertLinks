@@ -1,35 +1,16 @@
 import time
 from pydub import AudioSegment
-import re
 import random
 import os
 from dotenv import load_dotenv
-from pathlib import Path
 import requests
+from pathlib import Path
 
-from . import utilities
+import utilities
 
 load_dotenv()
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-
-def getMp4UrlAndName(url):
-    # Fetch the text from the URL
-    response = requests.get(url)
-    text = response.text
-
-    # Find the first substring between '"' and 'download="clip-' using regex
-    pattern = r"https:\/\/vod-cdn\.lp-playback\.studio\/raw\/[a-z0-9]+\/catalyst-vod-com\/hls\/[a-z0-9]+\/1080p0\.mp4"
-    match = re.search(pattern, text)
-    mp4Url = match.group(0) if match else ""
-    print("mp4Url", mp4Url)
-
-    # Find the second substring between '<title>' and '| StreamETH</title>'
-    start_index = text.find("<title>") + len("<title>")
-    end_index = text.find("| StreamETH</title>", start_index)
-    name = text[start_index:end_index]
-
-    return mp4Url, name
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def download_mp4_and_convert_to_mp3(url):
@@ -54,27 +35,27 @@ def download_mp4_and_convert_to_mp3(url):
     audio.export(mp3_file, format="mp3")
 
     os.remove(mp4_file)
-
     return str(mp3_file)
 
 
-def convertStreameth(streamethUrl, forceRefresh):
-    inputSource = "StreamEth"
-    mp4Url, name = getMp4UrlAndName(streamethUrl)
-    id = "".join(char for char in mp4Url if char.isalnum())
-    id += "_" + "".join(char for char in name if char.isalnum())
-    gistUrl = utilities.get_gist_url_for_guid(id)
+def convertMp4(mp4_url, forceRefresh):
+    inputSource = "MP4"
+    mp4Id = "".join(char for char in mp4_url if char.isalnum())
+    domain = mp4_url.split("/")[2:3][0]
+    fileName = mp4Id.split("/")[-1].split(".")[0]
+    name = domain + "_" + fileName
+    gistUrl = utilities.get_gist_url_for_guid(mp4Id)
     if gistUrl and not forceRefresh:
         return gistUrl
-    mp3_file = download_mp4_and_convert_to_mp3(mp4Url)
+    mp3_file = download_mp4_and_convert_to_mp3(mp4_url)
     audio_chunks = utilities.chunk_mp3(mp3_file)
     transcript = utilities.transcribe_mp3(audio_chunks)
     gist_url = utilities.writeGist(
         transcript,
         f"{inputSource}: " + name,
-        id,
+        mp4Id,
         update=True,
-        source_url=streamethUrl,
+        source_url=mp4_url,
     )
 
     return gist_url

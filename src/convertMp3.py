@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 import requests
 from pathlib import Path
 
-from . import utilities
+import utilities
 
 load_dotenv()
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def download_mp3(url):

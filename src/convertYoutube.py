@@ -5,7 +5,7 @@ from youtube_transcript_api import (
 )
 from loguru import logger
 
-from . import utilities
+import utilities
 from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup

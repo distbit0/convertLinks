@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from loguru import logger
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def getAbsPath(relPath):
@@ -39,7 +39,7 @@ logger.add(
 TMP_DIR = REPO_ROOT / "tmp"
 TMP_DIR.mkdir(exist_ok=True)
 
-from .write_gist import writeContent, getGistUrl
+from write_gist import writeContent, getGistUrl
 
 MODEL_NAME = "openai/gpt-5.1"
 MAX_RETRIES = 3

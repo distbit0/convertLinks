@@ -8,7 +8,7 @@ import json
 from dateutil import parser
 from pathlib import Path
 
-from . import utilities
+import utilities
 
 load_dotenv()
 
@@ -29,7 +29,7 @@ def extract_and_validate_numbers_from_url(url):
         return False
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def fetch_messages(channel_id, initial_message_id):
@@ -43,7 +43,7 @@ def fetch_messages(channel_id, initial_message_id):
     last_timestamp = ""
 
     # Load cached messages and the latest message ID from the cache file if it exists
-    cache_file = REPO_ROOT / "storage" / f"message_cache_{channel_id}.json"
+    cache_file = REPO_ROOT / "data" / "lineate" / f"message_cache_{channel_id}.json"
     if cache_file.exists():
         with open(cache_file, "r") as f:
             cache_data = json.load(f)
@@ -120,6 +120,7 @@ def fetch_messages(channel_id, initial_message_id):
         )
 
     # Save the cached messages and the latest message ID to the cache file
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
     with open(cache_file, "w") as f:
         json.dump({"messages": all_messages, "latest_message_id": last_message_id}, f)
 
