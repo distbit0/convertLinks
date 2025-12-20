@@ -6,6 +6,7 @@ import traceback
 import os
 import pyperclip
 from tkinter import Tk, messagebox
+import webbrowser
 
 from .convertDiscord import convertDiscord
 from .convertDiscourse import convertDiscourse
@@ -92,7 +93,7 @@ def returnUnchanged(url, forceRefresh):
 
 
 def open_in_browser(url):
-    subprocess.run(["xdg-open", url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    webbrowser.open(url)
 
 
 conversion_functions = {
@@ -140,9 +141,10 @@ def process_url(originalUrl, openInBrowser, forceConvertAllUrls, forceNoConvert=
     except Exception as e:
         print(e)
         traceback.print_exc()
-        subprocess.run(
-            ["notify-send", "URL Processing Error", f"Error: {url}" + str(e)]
-        )
+        root = Tk()
+        root.withdraw()
+        messagebox.showerror("URL Processing Error", f"Error: {url}{e}")
+        root.destroy()
         open_in_browser(originalUrl)
         return None
     else:
