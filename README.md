@@ -62,9 +62,16 @@ How to get each key (links + minimal steps):
 
 ## External tools (system dependencies)
 - `ffmpeg` – required by `pydub` and `yt-dlp` for audio conversion.
+- `yt-dlp` – required for some sources (e.g., Rumble).
 - Clipboard helper for `pyperclip`:
   - Linux (X11): `xclip` or `xsel` (or `wl-clipboard` on Wayland)
   - macOS: `pbcopy`/`pbpaste` (built-in)
+
+Install (CLI dependencies):
+- macOS (Homebrew):
+  - `brew install ffmpeg yt-dlp`
+- Linux (Fedora):
+  - `sudo dnf install ffmpeg yt-dlp`
 
 ## Python dependencies used by lineate
 Installed via `uv sync` from `pyproject.toml`. Key runtime packages:
