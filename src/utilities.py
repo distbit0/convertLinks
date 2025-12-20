@@ -41,7 +41,7 @@ TMP_DIR.mkdir(exist_ok=True)
 
 from write_gist import writeContent, getGistUrl
 
-MODEL_NAME = "openai/gpt-5.1"
+MODEL_NAME = "gpt-5.1"
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
 DEFAULT_SUMMARISE = False
