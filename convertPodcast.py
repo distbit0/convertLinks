@@ -1,13 +1,10 @@
 import time
-from pydub import AudioSegment
 import re
 import json
 import random
 import utilities
 import os
 from dotenv import load_dotenv
-from math import ceil
-from openai import OpenAI
 import requests
 from html import unescape
 
@@ -16,7 +13,7 @@ load_dotenv()
 
 def get_podcast_episode_info(url):
     # Send a GET request to the podcast episode URL
-    response = requests.get(url)
+    response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
     response.raise_for_status()
 
     # Find the script tag containing the JSON data
@@ -38,6 +35,22 @@ def get_podcast_episode_info(url):
                 title = newJson["d"][0]["attributes"]["name"]
                 return decoded_url, title
 
+    script_tags = re.findall(r"<script[^>]*>(.*?)</script>", response.text, re.DOTALL)
+    for script in sorted(script_tags, key=len, reverse=True):
+        try:
+            data = json.loads(script)
+        except json.JSONDecodeError:
+            continue
+        stack = [data]
+        while stack:
+            item = stack.pop()
+            if isinstance(item, dict):
+                if "streamUrl" in item and "title" in item:
+                    return item["streamUrl"], item["title"]
+                stack.extend(item.values())
+            elif isinstance(item, list):
+                stack.extend(item)
+
     return None, None
 
 
@@ -52,8 +65,15 @@ def download_podcast_episode(url):
     # Get the episode info
     audio_url, title = get_podcast_episode_info(url)
 
+    if not audio_url:
+        raise ValueError(f"Could not find audio URL for {url}")
+
     # Download the podcast episode
-    response = requests.get(audio_url, allow_redirects=True)
+    response = requests.get(
+        audio_url,
+        allow_redirects=True,
+        headers={"User-Agent": "Mozilla/5.0", "Referer": url},
+    )
     response.raise_for_status()
 
     # Save the episode audio to a file
@@ -83,3 +103,10 @@ def convertPodcast(episode_url, forceRefresh):
         source_url=episode_url,
     )
     return gist_url
+
+
+if __name__ == "__main__":
+    convertPodcast(
+        "https://podcasts.apple.com/us/podcast/revolutionizing-governance-how-futarchy-is-shaking/id1661582246?i=1000701481178",
+        forceRefresh=True,
+    )
