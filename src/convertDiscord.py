@@ -43,7 +43,7 @@ def fetch_messages(channel_id, initial_message_id):
     last_timestamp = ""
 
     # Load cached messages and the latest message ID from the cache file if it exists
-    cache_file = REPO_ROOT / "data" / "lineate" / f"message_cache_{channel_id}.json"
+    cache_file = REPO_ROOT / "data" / "discord" / f"message_cache_{channel_id}.json"
     if cache_file.exists():
         with open(cache_file, "r") as f:
             cache_data = json.load(f)
