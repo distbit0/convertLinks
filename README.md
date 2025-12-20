@@ -24,7 +24,7 @@ URL requirements (what to paste):
 - Rumble: video URL
 - Streameth: video URL
 - MP3/MP4: direct file URL
-- GitBook/Discourse: page/topic URL
+- GitBook/Discourse: page URL
 
 ## Quick start
 1) Install Python deps (managed via `pyproject.toml`):
