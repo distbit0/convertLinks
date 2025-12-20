@@ -6,3 +6,4 @@ storage/
 .aider*
 xRequests.py
 logs/
+data/
