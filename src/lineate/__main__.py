@@ -1,4 +1,4 @@
-from .convertLinks import cli
+from .lineate import cli
 
 
 if __name__ == "__main__":

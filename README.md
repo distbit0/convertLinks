@@ -1,6 +1,6 @@
-# convertLinks
+# lineate
 
-Convert links (or clipboard text) into normalized URLs or private GitHub Gists with transcripts/archives, then optionally open the result in your browser.
+Lineate turns links (or clipboard text) into cleaner, more readable outputs, then optionally opens the result in your browser.
 
 ## What it does (user perspective)
 - Paste a link (or any text containing links) and get back cleaned/converted URLs.
@@ -20,12 +20,12 @@ Supported conversions include:
 2) Ensure external tools are installed (see below).
 3) Fill in `.env` with required keys.
 4) Run:
-   - `uv run --env-file .env -m convertlinks "https://..."`
+   - `uv run --env-file .env -m lineate "https://..."`
    - or just run with no args to use the clipboard.
 
 ## Usage
 ```bash
-uv run --env-file .env -m convertlinks [text-or-url]
+uv run --env-file .env -m lineate [text-or-url]
 ```
 Options:
 - `--force-no-convert`   Skip conversion for all URLs.
@@ -59,7 +59,7 @@ Notes:
   - Linux (X11): `xclip` or `xsel` (or `wl-clipboard` on Wayland)
   - macOS: `pbcopy`/`pbpaste` (built-in)
 
-## Python dependencies used by convertLinks path
+## Python dependencies used by lineate
 Installed via `uv sync` from `pyproject.toml`. Key runtime packages:
 - `requests`, `loguru`, `python-dotenv`, `pyperclip`
 - `openai` (Whisper transcription)

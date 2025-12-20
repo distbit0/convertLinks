@@ -4,5 +4,5 @@ OLD_PATH=$PATH
 source /home/pimania/.bash_aliases
 source /home/pimania/dev/guiFromCron/crongui.sh
 PATH=$PATH:$OLD_PATH
-cd /home/pimania/dev/convertLinks
-uv run --env-file .env -m convertlinks "$@"
+cd "$(dirname "$0")"
+uv run --env-file .env -m lineate "$@"
