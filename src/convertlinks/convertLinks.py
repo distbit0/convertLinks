@@ -202,6 +202,7 @@ def cli():
     parser.add_argument(
         "--force-convert-all",
         action="store_true",
+        default=True,
         help="Force conversion for all URLs, even if not marked alwaysConvert.",
     )
     parser.add_argument(
