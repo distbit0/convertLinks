@@ -60,6 +60,14 @@ def set_default_summarise(flag: bool) -> None:
     DEFAULT_SUMMARISE = bool(flag)
 
 
+def get_gist_url_for_guid(guid: str | None, summarise: bool | None = None) -> str | None:
+    if not guid:
+        return None
+    actual_summarise = DEFAULT_SUMMARISE if summarise is None else bool(summarise)
+    adjusted_guid = f"{guid}_summary" if actual_summarise else guid
+    return getGistUrl(adjusted_guid)
+
+
 def _hash_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 

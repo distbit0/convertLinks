@@ -44,7 +44,7 @@ def convertMp4(mp4_url, forceRefresh):
     domain = mp4_url.split("/")[2:3][0]
     fileName = mp4Id.split("/")[-1].split(".")[0]
     name = domain + "_" + fileName
-    gistUrl = utilities.getGistUrl(mp4Id)
+    gistUrl = utilities.get_gist_url_for_guid(mp4Id)
     if gistUrl and not forceRefresh:
         return gistUrl
     mp3_file = download_mp4_and_convert_to_mp3(mp4_url)

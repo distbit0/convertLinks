@@ -174,7 +174,7 @@ def convertDiscord(url, forceRefresh):
     else:
         print("invalid url")
         return False
-    gistUrl = utilities.getGistUrl(initial_message_id)
+    gistUrl = utilities.get_gist_url_for_guid(initial_message_id)
     print("forceRefresh", forceRefresh)
     if gistUrl and not forceRefresh:
         return gistUrl

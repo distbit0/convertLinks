@@ -52,7 +52,7 @@ def convertGitbook(url, forceRefresh):
         return url
     url = re.sub(r"#.*", "", url)  # Remove #comments from the URL
     unique_url = getUniqueUrl(url)
-    gistUrl = utilities.getGistUrl(unique_url)
+    gistUrl = utilities.get_gist_url_for_guid(unique_url)
     if gistUrl and not forceRefresh:
         return gistUrl
     markdown_url = _build_markdown_url(url)

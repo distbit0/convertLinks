@@ -39,7 +39,7 @@ def download_podcast_episode(url):
 
 def convertSoundcloud(episode_url, forceRefresh):
     episodeId = episode_url.split("/")[-1]
-    gistUrl = utilities.getGistUrl(episodeId)
+    gistUrl = utilities.get_gist_url_for_guid(episodeId)
     if gistUrl and not forceRefresh:
         return gistUrl
     mp3_file, title = download_podcast_episode(episode_url, 0.8)

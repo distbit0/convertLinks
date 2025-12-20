@@ -55,7 +55,7 @@ def convertDiscourse(url: str, forceRefresh: bool):
         return False
 
     unique_url = getUniqueUrl(raw_url)
-    gist_url = utilities.getGistUrl(unique_url)
+    gist_url = utilities.get_gist_url_for_guid(unique_url)
     if gist_url and not forceRefresh:
         return gist_url
 

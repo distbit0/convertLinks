@@ -49,7 +49,7 @@ def download_rumble_video_as_mp3(url):
 def convertRumble(video_url, forceRefresh):
     inputSource = "Rumble"
     videoId = video_url.split("/")[-1]
-    gistUrl = utilities.getGistUrl(videoId)
+    gistUrl = utilities.get_gist_url_for_guid(videoId)
     if gistUrl and not forceRefresh:
         return gistUrl
 

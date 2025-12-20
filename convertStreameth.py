@@ -63,7 +63,7 @@ def convertStreameth(streamethUrl, forceRefresh):
     mp4Url, name = getMp4UrlAndName(streamethUrl)
     id = "".join(char for char in mp4Url if char.isalnum())
     id += "_" + "".join(char for char in name if char.isalnum())
-    gistUrl = utilities.getGistUrl(id)
+    gistUrl = utilities.get_gist_url_for_guid(id)
     if gistUrl and not forceRefresh:
         return gistUrl
     mp3_file = download_mp4_and_convert_to_mp3(mp4Url)

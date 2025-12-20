@@ -40,7 +40,7 @@ def convertYoutube(video_url, forceRefresh):
         videoId = video_url.split("v=")[-1].split("&")[0]
     videoId = videoId.split("#")[0]
     video_url = f"https://www.youtube.com/watch?v={videoId}"
-    gistUrl = utilities.getGistUrl(videoId)
+    gistUrl = utilities.get_gist_url_for_guid(videoId)
     if gistUrl and not forceRefresh:
         return gistUrl
     try:

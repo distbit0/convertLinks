@@ -555,7 +555,7 @@ def convertTwitter(url, forceRefresh):
     else:
         return url
     tweet_id = url.split("/")[-1].strip(".html").split("#")[0].split("?")[0]
-    gistUrl = utilities.getGistUrl(tweet_id)
+    gistUrl = utilities.get_gist_url_for_guid(tweet_id)
     if gistUrl and not forceRefresh:
         return gistUrl
     rawReplies = getReplies(tweet_id, onlyOp)

@@ -36,7 +36,7 @@ def convertMp3(mp3_url, forceRefresh):
     name = domain + "_" + fileName
     inputSource = "MP3"
 
-    gistUrl = utilities.getGistUrl(identifier)
+    gistUrl = utilities.get_gist_url_for_guid(identifier)
     if gistUrl and not forceRefresh:
         return gistUrl
 

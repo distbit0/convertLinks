@@ -151,7 +151,7 @@ def convertYoutube(video_url, forceRefresh):
     else:
         videoId = video_url.split("v=")[-1].split("&")[0]
     video_url = f"https://www.youtube.com/watch?v={videoId}"
-    gistUrl = utilities.getGistUrl(videoId)
+    gistUrl = utilities.get_gist_url_for_guid(videoId)
     if gistUrl and not forceRefresh:
         return gistUrl
     mp3_file, title = download_youtube_video_as_mp3(video_url)

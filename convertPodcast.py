@@ -89,7 +89,7 @@ def convertPodcast(episode_url, forceRefresh):
     podcastId = episode_url.split("/")[-1].split("?")[0]
     episodeId = episode_url.split("?i=")[-1].split("#")[0]
     episodeId = podcastId + "_" + episodeId
-    gistUrl = utilities.getGistUrl(episodeId)
+    gistUrl = utilities.get_gist_url_for_guid(episodeId)
     if gistUrl and not forceRefresh:
         return gistUrl
     mp3_file, title = download_podcast_episode(episode_url)
