@@ -68,7 +68,7 @@ def convertStreameth(streamethUrl, forceRefresh):
         return gistUrl
     mp3_file = download_mp4_and_convert_to_mp3(mp4Url)
     audio_chunks = utilities.chunk_mp3(mp3_file)
-    transcript = utilities.transcribe_mp3(inputSource, streamethUrl, audio_chunks)
+    transcript = utilities.transcribe_mp3(audio_chunks)
     gist_url = utilities.writeGist(
         transcript,
         f"{inputSource}: " + name,

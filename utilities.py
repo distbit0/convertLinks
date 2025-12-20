@@ -228,7 +228,7 @@ def deleteMp3sOlderThan(maxAgeSeconds, output_dir):
             else:
                 creationTime = os.path.getctime(filePath)
             if time.time() - creationTime > maxAgeSeconds:
-                print("deleting file", filePath)
+                logger.info("Deleting file {}", filePath)
                 os.remove(filePath)
 
 
@@ -263,7 +263,7 @@ def chunk_mp3(mp3_file):
 
 ### might be worthwhile to modify this so it includes timestamps in the output even if they are not clickable
 def transcribe_mp3_chunk(client, chunk_filename, chunk_index, total_chunks):
-    print(f"transcribing chunk {chunk_index + 1} of {total_chunks}")
+    logger.info("Transcribing chunk {} of {}", chunk_index + 1, total_chunks)
     with open(chunk_filename, "rb") as audio_file:
         transcript = client.audio.transcriptions.create(
             file=audio_file,
@@ -283,13 +283,17 @@ def transcribe_mp3_chunk(client, chunk_filename, chunk_index, total_chunks):
     }
 
 
-def transcribe_mp3(inputSource, inputUrl, audio_chunks):
-    client = OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-    )
+def _get_openai_api_key() -> str:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY is not set.")
+    return api_key
+
+
+def transcribe_mp3(audio_chunks):
+    client = OpenAI(api_key=_get_openai_api_key())
     markdown_transcript = ""
-    print("transcribing mp3")
+    logger.info("Transcribing mp3")
     # Process chunks in parallel
     with ThreadPoolExecutor() as executor:
         futures = [

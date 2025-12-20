@@ -42,7 +42,7 @@ def convertMp3(mp3_url, forceRefresh):
 
     mp3_file = download_mp3(mp3_url)
     audio_chunks = utilities.chunk_mp3(mp3_file)
-    transcript = utilities.transcribe_mp3(inputSource, mp3_url, audio_chunks)
+    transcript = utilities.transcribe_mp3(audio_chunks)
     gist_url = utilities.writeGist(
         transcript,
         f"{inputSource}: " + name,

@@ -47,7 +47,7 @@ def convertSoundcloud(episode_url, forceRefresh):
     if not audio_chunks:
         return None
     inputSource = "SC"
-    transcript = utilities.transcribe_mp3(inputSource, episode_url, audio_chunks)
+    transcript = utilities.transcribe_mp3(audio_chunks)
     gist_url = utilities.writeGist(
         transcript,
         f"{inputSource}: " + title,
