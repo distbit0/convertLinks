@@ -14,6 +14,18 @@ Supported conversions include:
 - GitBook/Discourse: fetch markdown and write gist.
 - MP3/MP4/Rumble/Streameth/SoundCloud/Apple Podcasts: download audio/video, transcribe with Whisper, write gist.
 
+URL requirements (what to paste):
+- YouTube: video URL
+- Twitter/X: tweet URL
+- Discord: message URL
+- Telegram: message URL
+- Apple Podcasts: podcast/episode URL
+- SoundCloud: track URL
+- Rumble: video URL
+- Streameth: video URL
+- MP3/MP4: direct file URL
+- GitBook/Discourse: page/topic URL
+
 ## Quick start
 1) Install Python deps (managed via `pyproject.toml`):
    - `uv sync`
