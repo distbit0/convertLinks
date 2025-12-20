@@ -1,13 +1,14 @@
-from os import path
 import time
 
 import re
 import requests
 from dotenv import load_dotenv
 import os
-import utilities
 import json
 from dateutil import parser
+from pathlib import Path
+
+from . import utilities
 
 load_dotenv()
 
@@ -28,6 +29,9 @@ def extract_and_validate_numbers_from_url(url):
         return False
 
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
 def fetch_messages(channel_id, initial_message_id):
     base_url = "https://discord.com/api/v9/channels"
     authToken = os.getenv("DISCORD_AUTH_TOKEN")
@@ -39,9 +43,8 @@ def fetch_messages(channel_id, initial_message_id):
     last_timestamp = ""
 
     # Load cached messages and the latest message ID from the cache file if it exists
-    cache_file = f"storage/message_cache_{channel_id}.json"
-    cache_file = getAbsPath(cache_file)
-    if os.path.exists(cache_file):
+    cache_file = REPO_ROOT / "storage" / f"message_cache_{channel_id}.json"
+    if cache_file.exists():
         with open(cache_file, "r") as f:
             cache_data = json.load(f)
 
@@ -133,13 +136,6 @@ def fetch_messages(channel_id, initial_message_id):
     )
 
     return sorted_messages
-
-
-def getAbsPath(relPath):
-    basepath = path.dirname(__file__)
-    fullPath = path.abspath(path.join(basepath, relPath))
-
-    return fullPath
 
 
 def createHtmlFromJSON(messagesList, originalUrl):

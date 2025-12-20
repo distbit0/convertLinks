@@ -5,4 +5,4 @@ source /home/pimania/.bash_aliases
 source /home/pimania/dev/guiFromCron/crongui.sh
 PATH=$PATH:$OLD_PATH
 cd /home/pimania/dev/convertLinks
-uv run convertLinks.py "$@"
+uv run --env-file .env -m convertlinks "$@"

@@ -4,7 +4,8 @@ from youtube_transcript_api import (
     NoTranscriptFound,
 )
 from loguru import logger
-import utilities
+
+from . import utilities
 from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup

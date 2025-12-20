@@ -1,9 +1,7 @@
-import sys
 from pydub import AudioSegment
 from math import ceil
 from openai import OpenAI
 import time
-from os import path
 import json
 import os
 import re
@@ -15,25 +13,21 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from loguru import logger
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 
 def getAbsPath(relPath):
-    basepath = path.dirname(__file__)
-    fullPath = path.abspath(path.join(basepath, relPath))
-    return fullPath
+    return str((REPO_ROOT / relPath).resolve())
 
 
 def getConfig():
-    configFileName = getAbsPath("config.json")
+    configFileName = REPO_ROOT / "config.json"
     with open(configFileName) as config:
         config = json.loads(config.read())
     return config
 
 
-sys.path.append(getConfig()["gistWriteDir"])
-from writeGist import writeContent, getGistUrl
-
-
-LOG_DIR = Path(__file__).parent / "logs"
+LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 logger.add(
     LOG_DIR / "utilities.log",
@@ -42,8 +36,10 @@ logger.add(
     enqueue=True,
 )
 
-TMP_DIR = Path(__file__).parent / "tmp"
+TMP_DIR = REPO_ROOT / "tmp"
 TMP_DIR.mkdir(exist_ok=True)
+
+from .write_gist import writeContent, getGistUrl
 
 MODEL_NAME = "openai/gpt-5.1"
 MAX_RETRIES = 3
@@ -60,7 +56,9 @@ def set_default_summarise(flag: bool) -> None:
     DEFAULT_SUMMARISE = bool(flag)
 
 
-def get_gist_url_for_guid(guid: str | None, summarise: bool | None = None) -> str | None:
+def get_gist_url_for_guid(
+    guid: str | None, summarise: bool | None = None
+) -> str | None:
     if not guid:
         return None
     actual_summarise = DEFAULT_SUMMARISE if summarise is None else bool(summarise)

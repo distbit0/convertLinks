@@ -1,15 +1,16 @@
 import time
-from pydub import AudioSegment
-import re
-import random
-import utilities
 import os
+import random
+from pathlib import Path
+
 from dotenv import load_dotenv
-from math import ceil
-from openai import OpenAI
-from sclib import SoundcloudAPI, Track, Playlist
+from sclib import SoundcloudAPI, Track
+
+from . import utilities
 
 load_dotenv()
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def download_podcast_episode(url):
@@ -23,18 +24,17 @@ def download_podcast_episode(url):
         return None, None
 
     # Set the output directory relative to the script's location
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_dir = os.path.join(script_dir, "tmp")
+    output_dir = REPO_ROOT / "tmp"
     os.makedirs(output_dir, exist_ok=True)
     currentTime = time.time()
     randomNumber = str(currentTime) + "_" + str(random.randint(1000000000, 9999999999))
 
     # Save the episode audio to a file
-    mp3_file = os.path.join(output_dir, f"{randomNumber}.mp3")
+    mp3_file = output_dir / f"{randomNumber}.mp3"
     with open(mp3_file, "wb+") as file:
         track.write_mp3_to(file)
 
-    return mp3_file, track.title
+    return str(mp3_file), track.title
 
 
 def convertSoundcloud(episode_url, forceRefresh):

@@ -1,21 +1,21 @@
 import time
 from pydub import AudioSegment
-import re
 import random
-import utilities
 import os
 from dotenv import load_dotenv
-from math import ceil
-from openai import OpenAI
 import requests
+from pathlib import Path
+
+from . import utilities
 
 load_dotenv()
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def download_mp4_and_convert_to_mp3(url):
     # Set the output directory relative to the script's location
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_dir = os.path.join(script_dir, "tmp")
+    output_dir = REPO_ROOT / "tmp"
     os.makedirs(output_dir, exist_ok=True)
     currentTime = time.time()
     randomNumber = str(currentTime) + "_" + str(random.randint(1000000000, 9999999999))
@@ -25,17 +25,17 @@ def download_mp4_and_convert_to_mp3(url):
     response.raise_for_status()
 
     # Save the MP4 file
-    mp4_file = os.path.join(output_dir, f"{randomNumber}.mp4")
+    mp4_file = output_dir / f"{randomNumber}.mp4"
     with open(mp4_file, "wb") as file:
         file.write(response.content)
 
     # Convert MP4 to MP3 using pydub
     audio = AudioSegment.from_file(mp4_file, format="mp4")
-    mp3_file = os.path.join(output_dir, f"{randomNumber}.mp3")
+    mp3_file = output_dir / f"{randomNumber}.mp3"
     audio.export(mp3_file, format="mp3")
 
     os.remove(mp4_file)
-    return mp3_file
+    return str(mp3_file)
 
 
 def convertMp4(mp4_url, forceRefresh):

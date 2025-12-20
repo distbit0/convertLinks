@@ -1,26 +1,25 @@
-import re
 import argparse
+import re
 import subprocess
-import json
 import threading
-from os import path
-from convertDiscord import convertDiscord
-from convertTelegram import convertTelegram
-from convertYoutube import convertYoutube
-from convertPodcast import convertPodcast
-from convertGitbook import convertGitbook
-from convertDiscourse import convertDiscourse
-from convertSoundcloud import convertSoundcloud
-from convertMp4 import convertMp4
-from convertMp3 import convertMp3
-from convertStreameth import convertStreameth
-from convertTwitter import convertTwitter
-from convertRumble import convertRumble
 import traceback
 import os
 import pyperclip
 from tkinter import Tk, messagebox
-import utilities
+
+from .convertDiscord import convertDiscord
+from .convertDiscourse import convertDiscourse
+from .convertGitbook import convertGitbook
+from .convertMp3 import convertMp3
+from .convertMp4 import convertMp4
+from .convertPodcast import convertPodcast
+from .convertRumble import convertRumble
+from .convertSoundcloud import convertSoundcloud
+from .convertStreameth import convertStreameth
+from .convertTelegram import convertTelegram
+from .convertTwitter import convertTwitter
+from .convertYoutube import convertYoutube
+from . import utilities
 
 
 def get_selected_text():
@@ -34,19 +33,6 @@ def get_selected_text():
         messagebox.showerror("Clipboard Error", f"Failed to read clipboard: {str(e)}")
         root.destroy()
         return None
-
-
-def getAbsPath(relPath):
-    basepath = path.dirname(__file__)
-    fullPath = path.abspath(path.join(basepath, relPath))
-    return fullPath
-
-
-def getConfig():
-    configFileName = getAbsPath("config.json")
-    with open(configFileName) as config:
-        config = json.loads(config.read())
-    return config
 
 
 # URL extraction and opening
@@ -206,7 +192,7 @@ def main(
     return processed_urls
 
 
-if __name__ == "__main__":
+def cli():
     parser = argparse.ArgumentParser(description="Convert and normalize URLs.")
     parser.add_argument(
         "text",
@@ -242,3 +228,7 @@ if __name__ == "__main__":
         summarise=args.summarise,
         forceNoConvert=args.force_no_convert,
     )
+
+
+if __name__ == "__main__":
+    cli()

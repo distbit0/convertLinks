@@ -4,7 +4,7 @@ from pathlib import Path
 import requests
 from loguru import logger
 
-import utilities
+from . import utilities
 
 
 def getUniqueUrl(url: str) -> str:
@@ -14,7 +14,8 @@ def getUniqueUrl(url: str) -> str:
     return unique_url
 
 
-LOG_DIR = Path(__file__).parent / "logs"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 logger.add(
     LOG_DIR / "convertDiscourse.log",

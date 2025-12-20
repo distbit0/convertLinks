@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 import requests
 from loguru import logger
 
-import utilities
+from . import utilities
 
 
 def getUniqueUrl(url):
@@ -15,7 +15,8 @@ def getUniqueUrl(url):
     return unique_url
 
 
-LOG_DIR = Path(__file__).parent / "logs"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 logger.add(
     LOG_DIR / "convertGitbook.log",

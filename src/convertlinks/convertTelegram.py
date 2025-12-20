@@ -1,9 +1,7 @@
-from os import path
 import asyncio
 import re
 from pathlib import Path
 from urllib.parse import urlparse
-import utilities
 from telethon import TelegramClient
 from telethon.tl.types import MessageEmpty
 from dotenv import load_dotenv
@@ -11,13 +9,16 @@ from loguru import logger
 import os
 import sys
 
+from . import utilities
+
 load_dotenv()
 
 api_id = os.getenv("TELEGRAM_API_ID")
 api_hash = os.getenv("TELEGRAM_API_HASH")
 session_name = os.getenv("TELEGRAM_SESSION_NAME")
 
-LOG_DIR = Path(__file__).parent / "logs"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 logger.remove()
 logger.add(sys.stdout, level="INFO")
@@ -82,12 +83,6 @@ async def fetch_messages(chat_id, initial_message_id, client, limit=None):
         messages[-1].id if messages else initial_message_id,
     )
     return messages
-
-
-def getAbsPath(relPath):
-    basepath = path.dirname(__file__)
-    fullPath = path.abspath(path.join(basepath, relPath))
-    return fullPath
 
 
 def createHtmlFromMessages(messagesList, originalUrl):

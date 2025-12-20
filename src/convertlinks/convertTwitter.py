@@ -8,14 +8,16 @@ from typing import Any, Dict, List, Optional, Tuple
 from collections import deque
 import heapq
 import requests
-import utilities
 from dotenv import load_dotenv
 from loguru import logger
 from http.cookies import SimpleCookie
 
+from . import utilities
+
 load_dotenv()
 
-LOG_DIR = Path(__file__).parent / "logs"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 logger.add(
     LOG_DIR / "convertTwitter.log",
