@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import requests
 from html import unescape
 from pathlib import Path
+from urllib.parse import urlparse
 
 import utilities
 
@@ -79,12 +80,17 @@ def download_podcast_episode(url):
     )
     response.raise_for_status()
 
+    audio_path = Path(urlparse(audio_url).path)
+    audio_ext = audio_path.suffix.lower().lstrip(".")
+    if audio_ext not in {"mp3", "m4a", "mp4"}:
+        raise ValueError(f"Unsupported podcast audio extension: {audio_ext or 'none'}")
+
     # Save the episode audio to a file
-    mp3_file = output_dir / f"{randomNumber}.mp3"
-    with open(mp3_file, "wb") as file:
+    audio_file = output_dir / f"{randomNumber}.{audio_ext}"
+    with open(audio_file, "wb") as file:
         file.write(response.content)
 
-    return str(mp3_file), title
+    return str(audio_file), title
 
 
 def convertPodcast(episode_url, forceRefresh):

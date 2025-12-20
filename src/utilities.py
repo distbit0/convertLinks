@@ -223,7 +223,7 @@ def writeGist(
 def deleteMp3sOlderThan(maxAgeSeconds, output_dir):
     files = os.listdir(output_dir)
     for file in files:
-        if file.split(".")[-1] in ["mp3", "webm", "part", "mp4", "txt"]:
+        if file.split(".")[-1] in ["mp3", "m4a", "webm", "part", "mp4", "txt"]:
             filePath = os.path.join(output_dir, file)
             fileName = filePath.split("/")[-1].split(".")[0]
             if fileName.count("_") == 3:
@@ -238,10 +238,12 @@ def deleteMp3sOlderThan(maxAgeSeconds, output_dir):
 def chunk_mp3(mp3_file):
     max_size_mb = 0.8
     randomNumber = mp3_file.split("/")[-1].split(".")[0]
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_dir = os.path.join(script_dir, "tmp")
-    # Load the MP3 file using pydub
-    audio = AudioSegment.from_mp3(mp3_file)
+    output_dir = REPO_ROOT / "tmp"
+    output_dir.mkdir(exist_ok=True)
+    audio_ext = os.path.splitext(mp3_file)[1].lower().lstrip(".")
+    if audio_ext and audio_ext not in {"mp3", "m4a", "mp4"}:
+        raise ValueError(f"Unsupported audio extension: {audio_ext}")
+    audio = AudioSegment.from_file(mp3_file, format=audio_ext or None)
 
     # Calculate the number of chunks based on the maximum size
     chunk_size_bytes = max_size_mb * 1024 * 1024
