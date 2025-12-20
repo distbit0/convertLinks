@@ -7,3 +7,4 @@ storage/
 xRequests.py
 logs/
 data/
+.vscode
