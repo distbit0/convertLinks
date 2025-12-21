@@ -47,7 +47,7 @@ Hidden behaviors:
 - Add `###` in a URL to force refresh even if a gist already exists.
 
 ## Environment variables (.env)
-Put these in this repo’s `.env` (loaded via `python-dotenv`):
+Put these in this repo’s `.env` 
 
 Required for core functionality:
 - `gh_api_key` – GitHub personal access token with Gist scope (used by `writeGist`).
@@ -82,9 +82,9 @@ How to get each key (links + minimal steps):
 
 Install (CLI dependencies):
 - macOS (Homebrew):
-  - `brew install ffmpeg yt-dlp`
+  - `brew install ffmpeg yt-dlp uv`
 - Linux (Fedora):
-  - `sudo dnf install ffmpeg yt-dlp`
+  - `sudo dnf install ffmpeg yt-dlp uv`
 
 ## Python dependencies used by lineate
 Installed via `uv sync` from `pyproject.toml`. Key runtime packages:
