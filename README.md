@@ -73,6 +73,7 @@ How to get each key (links + minimal steps):
 - Twitter/X (`TWITTER_BEARER_TOKEN`, `TWITTER_CT0_TOKEN`, `TWITTER_COOKIE`) — **unofficial**: use browser devtools on x.com to copy cookies (`auth_token`, `ct0`) and the request `Authorization: Bearer ...` header. Docs: [Export X cookies (auth_token, ct0)](https://readybot.io/help/how-to/find-x-twitter-authentication-token), [Extract Bearer token from request headers](https://gist.github.com/jonathansampson/2814580886e5a5e2d0aaecd32794d53c).
 
 ## System dependencies
+- `uv` – Python package manager used to sync/install deps.
 - `ffmpeg` – required by `pydub` and `yt-dlp` for audio conversion.
 - `yt-dlp` – required for some sources (e.g., Rumble).
 - Clipboard helper for `pyperclip`:
