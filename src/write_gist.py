@@ -34,6 +34,9 @@ HTML_IMAGE_PATTERN = re.compile(
     r'(<img[^>]*\s+src=)(?P<quote>["\'])(?P<url>[^"\']+)(?P=quote)',
     re.IGNORECASE,
 )
+MD_LINK_PATTERN = re.compile(
+    r"(?<!!)\[(?P<text>[^\]]*)\]\((?P<url><[^>]+>|[^)\s]+)(?P<title>\s+(?:\"[^\"]*\"|'[^']*'))?\)"
+)
 
 
 def _read_json_file(path: Path) -> dict:
@@ -57,11 +60,32 @@ def _normalize_image_url(url: str) -> str:
     return cleaned_url
 
 
+def _looks_like_image_url(url: str) -> bool:
+    lowered = url.lower()
+    if any(
+        lowered.endswith(ext)
+        for ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".tif", ".tiff")
+    ):
+        return True
+    if "substackcdn.com/image" in lowered:
+        return True
+    if "substack-post-media.s3.amazonaws.com" in lowered:
+        return True
+    return False
+
+
 def _extract_image_urls(markdown_text: str) -> list[str]:
     urls = [match.group("url") for match in MD_IMAGE_PATTERN.finditer(markdown_text)]
     urls.extend(
         match.group("url") for match in HTML_IMAGE_PATTERN.finditer(markdown_text)
     )
+    for match in MD_LINK_PATTERN.finditer(markdown_text):
+        if match.group("text"):
+            continue
+        url = match.group("url")
+        normalized_url = _normalize_image_url(url)
+        if _looks_like_image_url(normalized_url):
+            urls.append(url)
     return urls
 
 
@@ -172,6 +196,20 @@ def _rewrite_markdown_images(markdown_text: str, url_map: dict[str, str]) -> str
         title = match.group("title") or ""
         return f"![{match.group('alt')}]({formatted_url}{title})"
 
+    def replace_link(match: re.Match) -> str:
+        if match.group("text"):
+            return match.group(0)
+        original_url = match.group("url")
+        normalized_url = _normalize_image_url(original_url)
+        if not _looks_like_image_url(normalized_url):
+            return match.group(0)
+        new_url = url_map.get(normalized_url)
+        if not new_url:
+            return match.group(0)
+        formatted_url = f"<{new_url}>" if original_url.startswith("<") else new_url
+        title = match.group("title") or ""
+        return f"![]({formatted_url}{title})"
+
     def replace_html(match: re.Match) -> str:
         original_url = match.group("url")
         normalized_url = _normalize_image_url(original_url)
@@ -181,6 +219,7 @@ def _rewrite_markdown_images(markdown_text: str, url_map: dict[str, str]) -> str
         return f"{match.group(1)}{match.group('quote')}{new_url}{match.group('quote')}"
 
     updated = MD_IMAGE_PATTERN.sub(replace_markdown, markdown_text)
+    updated = MD_LINK_PATTERN.sub(replace_link, updated)
     return HTML_IMAGE_PATTERN.sub(replace_html, updated)
 
 
