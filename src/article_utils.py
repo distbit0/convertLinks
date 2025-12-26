@@ -91,8 +91,43 @@ def _html_to_markdown(html: str, base_url: str | None) -> str:
 
 def _normalize_markdown(markdown: str) -> str:
     cleaned = markdown.replace("\r\n", "\n").strip()
+    cleaned = _convert_empty_image_links(cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned
+
+
+def _looks_like_image_url(url: str) -> bool:
+    lowered = url.lower()
+    if any(
+        lowered.endswith(ext)
+        for ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".tif", ".tiff")
+    ):
+        return True
+    if "substackcdn.com/image" in lowered:
+        return True
+    if "substack-post-media.s3.amazonaws.com" in lowered:
+        return True
+    return False
+
+
+def _convert_empty_image_links(markdown: str) -> str:
+    pattern = re.compile(
+        r"(?<!!)\[(?P<text>[^\]]*)\]\((?P<url><[^>]+>|[^)\s]+)(?P<title>\s+(?:\"[^\"]*\"|'[^']*'))?\)"
+    )
+
+    def replace(match: re.Match) -> str:
+        if match.group("text"):
+            return match.group(0)
+        url = match.group("url").strip()
+        if url.startswith("<") and url.endswith(">"):
+            url = url[1:-1].strip()
+        if not _looks_like_image_url(url):
+            return match.group(0)
+        formatted_url = f"<{url}>" if match.group("url").startswith("<") else url
+        title = match.group("title") or ""
+        return f"![]({formatted_url}{title})"
+
+    return pattern.sub(replace, markdown)
 
 
 def extract_article_markdown(html: str, base_url: str | None) -> tuple[str, str]:
