@@ -116,7 +116,7 @@ conversion_functions = {
     "m.wikipedia.org": {"function": convertWikipedia, "alwaysConvert": True},
     "reddit.com": {"function": convertReddit, "alwaysConvert": True},
     "medium.com": {"function": convertMediumScribe, "alwaysConvert": True},
-    "substack.com": {"function": convertSubstack, "alwaysConvert": False},
+    "substack.com": {"function": convertSubstack, "alwaysConvert": True},
     "/t/": {"function": convertDiscourse, "alwaysConvert": True},
     "lesswrong.com": {"function": convertLesswrong, "alwaysConvert": True},
     "https://t.me": {"function": convertTelegram, "alwaysConvert": True},
@@ -142,6 +142,10 @@ def process_url(
                     alwaysConvert = value["alwaysConvert"]
                     forceConvert = "##" in url
                     forceRefresh = "###" in url
+                    if key == "substack.com" and not (
+                        summarise or "jamesguilty" in url
+                    ):
+                        continue
                     if key == "medium.com" and forceConvertAllUrls:
                         url = convertMediumArticle(url, forceRefresh)
                     elif alwaysConvert or forceConvertAllUrls or forceConvert:
