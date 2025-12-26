@@ -109,6 +109,14 @@ def _dedupe_filename(filename: str, used_filenames: set[str], seed: str) -> str:
     return deduped
 
 
+def _sanitize_filename(filename: str) -> str:
+    cleaned = filename.replace("\\", "_").replace("/", "_")
+    cleaned = cleaned.strip()
+    if cleaned in {"", ".", ".."}:
+        return ""
+    return cleaned
+
+
 def _resolve_local_image_path(image_url: str, markdown_path: Path | None) -> Path:
     parsed = urllib.parse.urlparse(image_url)
     if parsed.scheme == "file":
@@ -174,6 +182,21 @@ def _build_image_assets(
             logger.warning(
                 "Image URL {} has no filename; using {}", normalized_url, filename
             )
+        else:
+            filename = _sanitize_filename(filename)
+            if not filename:
+                extension = _guess_extension(content_type)
+                if not extension:
+                    raise ValueError(
+                        f"Unable to infer extension for image {normalized_url}"
+                    )
+                short_hash = hashlib.sha1(normalized_url.encode()).hexdigest()[:12]
+                filename = f"image-{short_hash}{extension}"
+                logger.warning(
+                    "Image URL {} produced an unsafe filename; using {}",
+                    normalized_url,
+                    filename,
+                )
 
         filename = _dedupe_filename(filename, used_filenames, normalized_url)
         assets[normalized_url] = {"filename": filename, "content": content}
