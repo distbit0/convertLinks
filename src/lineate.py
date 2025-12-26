@@ -121,11 +121,18 @@ conversion_functions = {
 
 
 # @pysnooper.snoop()
-def process_url(originalUrl, openInBrowser, forceConvertAllUrls, forceNoConvert=False):
+def process_url(
+    originalUrl,
+    openInBrowser,
+    forceConvertAllUrls,
+    summarise,
+    forceNoConvert=False,
+):
     try:
         url = str(originalUrl)
         matched_conversion = False
         if not forceNoConvert:
+            summarise_only_converters = {convertMedium, convertSubstack}
             for key, value in conversion_functions.items():
                 if url and key in url:
                     matched_conversion = True
@@ -133,6 +140,8 @@ def process_url(originalUrl, openInBrowser, forceConvertAllUrls, forceNoConvert=
                     alwaysConvert = value["alwaysConvert"]
                     forceConvert = "##" in url
                     forceRefresh = "###" in url
+                    if func in summarise_only_converters and not summarise:
+                        continue
                     if alwaysConvert or forceConvertAllUrls or forceConvert:
                         # print("converting url", url, "with function", func.__name__)
                         url = func(url, forceRefresh)
@@ -142,8 +151,9 @@ def process_url(originalUrl, openInBrowser, forceConvertAllUrls, forceNoConvert=
                 and url
                 and url.startswith(("http://", "https://"))
             ):
-                forceRefresh = "###" in url
-                url = convertArticle(url, forceRefresh)
+                if summarise:
+                    forceRefresh = "###" in url
+                    url = convertArticle(url, forceRefresh)
     except Exception as e:
         print(e)
         traceback.print_exc()
@@ -164,7 +174,11 @@ def process_url(originalUrl, openInBrowser, forceConvertAllUrls, forceNoConvert=
 
 
 def main(
-    text, openInBrowser, forceConvertAllUrls, summarise=False, forceNoConvert=False
+    text,
+    openInBrowser,
+    forceConvertAllUrls,
+    summarise=False,
+    forceNoConvert=False,
 ):
     utilities.set_default_summarise(summarise)
     textFromClipboard = not bool(text)
@@ -181,7 +195,13 @@ def main(
     for url in urls:
         thread = threading.Thread(
             target=lambda u: processed_urls.append(
-                process_url(u, openInBrowser, forceConvertAllUrls, forceNoConvert)
+                process_url(
+                    u,
+                    openInBrowser,
+                    forceConvertAllUrls,
+                    summarise,
+                    forceNoConvert,
+                )
             ),
             args=(url,),
         )
