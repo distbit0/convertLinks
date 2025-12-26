@@ -4,6 +4,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import html2text
 import requests
+from bs4 import BeautifulSoup
 from loguru import logger
 from readability import Document
 
@@ -130,10 +131,28 @@ def _convert_empty_image_links(markdown: str) -> str:
     return pattern.sub(replace, markdown)
 
 
+def _is_substack_url(base_url: str | None) -> bool:
+    if not base_url:
+        return False
+    hostname = urlparse(base_url).netloc.lower()
+    return hostname.endswith("substack.com")
+
+
+def _extract_substack_body_html(html: str) -> str:
+    soup = BeautifulSoup(html, "html.parser")
+    body = soup.select_one("div.body.markup") or soup.select_one("div.body")
+    if not body:
+        raise ValueError("Substack body markup not found in HTML")
+    return str(body)
+
+
 def extract_article_markdown(html: str, base_url: str | None) -> tuple[str, str]:
     document = Document(html)
     title = _extract_title(document)
-    content_html = document.summary()
+    if _is_substack_url(base_url):
+        content_html = _extract_substack_body_html(html)
+    else:
+        content_html = document.summary()
     markdown = _html_to_markdown(content_html, base_url)
     markdown = _normalize_markdown(markdown)
     if title and not markdown.lstrip().startswith("#"):
