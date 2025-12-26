@@ -136,11 +136,14 @@ def process_url(originalUrl, openInBrowser, forceConvertAllUrls, forceNoConvert=
                     if alwaysConvert or forceConvertAllUrls or forceConvert:
                         # print("converting url", url, "with function", func.__name__)
                         url = func(url, forceRefresh)
-            if not matched_conversion and url and url.startswith(("http://", "https://")):
-                forceConvert = "##" in url
+            if (
+                forceConvertAllUrls
+                and not matched_conversion
+                and url
+                and url.startswith(("http://", "https://"))
+            ):
                 forceRefresh = "###" in url
-                if forceConvertAllUrls or forceConvert:
-                    url = convertArticle(url, forceRefresh)
+                url = convertArticle(url, forceRefresh)
     except Exception as e:
         print(e)
         traceback.print_exc()
@@ -207,7 +210,7 @@ def cli():
     parser.add_argument(
         "--force-convert-all",
         action="store_true",
-        default=True,
+        default=False,
         help="Force conversion for all URLs, even if not marked alwaysConvert.",
     )
     parser.add_argument(
