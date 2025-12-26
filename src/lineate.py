@@ -140,7 +140,12 @@ def process_url(
                     alwaysConvert = value["alwaysConvert"]
                     forceConvert = "##" in url
                     forceRefresh = "###" in url
-                    if func in summarise_only_converters and not summarise:
+                    if (
+                        func in summarise_only_converters
+                        and not summarise
+                        and not forceConvertAllUrls
+                        and not forceConvert
+                    ):
                         continue
                     if alwaysConvert or forceConvertAllUrls or forceConvert:
                         # print("converting url", url, "with function", func.__name__)
@@ -151,7 +156,7 @@ def process_url(
                 and url
                 and url.startswith(("http://", "https://"))
             ):
-                if summarise:
+                if summarise or forceConvertAllUrls:
                     forceRefresh = "###" in url
                     url = convertArticle(url, forceRefresh)
     except Exception as e:
