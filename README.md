@@ -12,6 +12,7 @@ Supported conversions include:
 - Twitter/X: fetch tweet + thread via internal GraphQL and write gist.
 - Discord & Telegram: fetch message history from a given message and write gist.
 - GitBook/Discourse: fetch markdown and write gist.
+- Medium/Substack/Articles: extract the main article content and write gist.
 - MP3/MP4/Rumble/Streameth/SoundCloud/Apple Podcasts: download audio/video, transcribe with Whisper, write gist.
 
 URL requirements (what to paste):
@@ -25,6 +26,7 @@ URL requirements (what to paste):
 - Streameth: video URL
 - MP3/MP4: direct file URL
 - GitBook/Discourse: page URL
+- Medium/Substack/Articles: article URL
 
 ## Quick start
 1) Install Python deps (managed via `pyproject.toml`):

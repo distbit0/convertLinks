@@ -27,6 +27,13 @@ def getConfig():
     return config
 
 
+def build_guid_from_url(url: str) -> str:
+    unique_url = url.lower()
+    unique_url = re.sub(r"[^a-z0-9]", "_", unique_url).strip("_")
+    unique_url = re.sub(r"_+", "_", unique_url)
+    return unique_url
+
+
 LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 logger.add(

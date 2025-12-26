@@ -7,13 +7,6 @@ from loguru import logger
 import utilities
 
 
-def getUniqueUrl(url: str) -> str:
-    unique_url = url.lower()
-    unique_url = re.sub(r"[^a-z0-9]", "_", unique_url).strip("_")
-    unique_url = re.sub(r"_+", "_", unique_url)
-    return unique_url
-
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
@@ -55,7 +48,7 @@ def convertDiscourse(url: str, forceRefresh: bool):
     if not raw_url:
         return False
 
-    unique_url = getUniqueUrl(raw_url)
+    unique_url = utilities.build_guid_from_url(raw_url)
     gist_url = utilities.get_gist_url_for_guid(unique_url)
     if gist_url and not forceRefresh:
         return gist_url

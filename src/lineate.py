@@ -8,15 +8,18 @@ import pyperclip
 from tkinter import Tk, messagebox
 import webbrowser
 
+from convertArticle import convertArticle
 from convertDiscord import convertDiscord
 from convertDiscourse import convertDiscourse
 from convertGitbook import convertGitbook
+from convertMedium import convertMedium
 from convertMp3 import convertMp3
 from convertMp4 import convertMp4
 from convertPodcast import convertPodcast
 from convertRumble import convertRumble
 from convertSoundcloud import convertSoundcloud
 from convertStreameth import convertStreameth
+from convertSubstack import convertSubstack
 from convertTelegram import convertTelegram
 from convertTwitter import convertTwitter
 from convertYoutube import convertYoutube
@@ -70,14 +73,6 @@ def convertReddit(url, forceRefresh):
     return url
 
 
-def convertMedium(url, forceRefresh):
-    if "-" in url:
-        if len(url.split("-")[-1]) == 12:
-            domain = url.split("https://")[1].split("/")[0]
-            url = url.replace(domain, "scribe.rip").strip()
-    return url
-
-
 def convertLesswrong(url, forceRefresh):
     url = url.replace("lesswrong.com", "greaterwrong.com").strip()
     return url
@@ -118,6 +113,7 @@ conversion_functions = {
     "m.wikipedia.org": {"function": convertWikipedia, "alwaysConvert": True},
     "reddit.com": {"function": convertReddit, "alwaysConvert": True},
     "medium.com": {"function": convertMedium, "alwaysConvert": True},
+    "substack.com": {"function": convertSubstack, "alwaysConvert": True},
     "/t/": {"function": convertDiscourse, "alwaysConvert": True},
     "lesswrong.com": {"function": convertLesswrong, "alwaysConvert": True},
     "https://t.me": {"function": convertTelegram, "alwaysConvert": True},
@@ -128,9 +124,11 @@ conversion_functions = {
 def process_url(originalUrl, openInBrowser, forceConvertAllUrls, forceNoConvert=False):
     try:
         url = str(originalUrl)
+        matched_conversion = False
         if not forceNoConvert:
             for key, value in conversion_functions.items():
                 if url and key in url:
+                    matched_conversion = True
                     func = value["function"]
                     alwaysConvert = value["alwaysConvert"]
                     forceConvert = "##" in url
@@ -138,6 +136,11 @@ def process_url(originalUrl, openInBrowser, forceConvertAllUrls, forceNoConvert=
                     if alwaysConvert or forceConvertAllUrls or forceConvert:
                         # print("converting url", url, "with function", func.__name__)
                         url = func(url, forceRefresh)
+            if not matched_conversion and url and url.startswith(("http://", "https://")):
+                forceConvert = "##" in url
+                forceRefresh = "###" in url
+                if forceConvertAllUrls or forceConvert:
+                    url = convertArticle(url, forceRefresh)
     except Exception as e:
         print(e)
         traceback.print_exc()
