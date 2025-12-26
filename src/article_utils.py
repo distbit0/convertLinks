@@ -131,28 +131,51 @@ def _convert_empty_image_links(markdown: str) -> str:
     return pattern.sub(replace, markdown)
 
 
-def _is_substack_url(base_url: str | None) -> bool:
-    if not base_url:
-        return False
-    hostname = urlparse(base_url).netloc.lower()
-    return hostname.endswith("substack.com")
-
-
-def _extract_substack_body_html(html: str) -> str:
+def _prepare_html_for_readability(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
-    body = soup.select_one("div.body.markup") or soup.select_one("div.body")
-    if not body:
-        raise ValueError("Substack body markup not found in HTML")
-    return str(body)
+    updated = False
+
+    for anchor in soup.find_all("a", href=True):
+        href = anchor.get("href", "").strip()
+        if not _looks_like_image_url(href):
+            continue
+        if anchor.get_text(strip=True):
+            continue
+        if anchor.find(["img", "picture", "source"]) is None:
+            continue
+        anchor.unwrap()
+        updated = True
+
+    for container in list(soup.find_all(["figure", "div"])):
+        imgs = container.find_all("img")
+        if not imgs:
+            continue
+        text = container.get_text(" ", strip=True)
+        if text and len(text) > 200:
+            continue
+        next_paragraph = container.find_next_sibling("p")
+        previous_paragraph = container.find_previous_sibling("p")
+        target = next_paragraph or previous_paragraph
+        if not target:
+            continue
+        for img in imgs:
+            if target is next_paragraph:
+                target.insert(0, img)
+            else:
+                target.append(img)
+        if text:
+            target.append(soup.new_string(f" {text}"))
+        container.decompose()
+        updated = True
+
+    return str(soup) if updated else html
 
 
 def extract_article_markdown(html: str, base_url: str | None) -> tuple[str, str]:
-    document = Document(html)
+    prepared_html = _prepare_html_for_readability(html)
+    document = Document(prepared_html)
     title = _extract_title(document)
-    if _is_substack_url(base_url):
-        content_html = _extract_substack_body_html(html)
-    else:
-        content_html = document.summary()
+    content_html = document.summary()
     markdown = _html_to_markdown(content_html, base_url)
     markdown = _normalize_markdown(markdown)
     if title and not markdown.lstrip().startswith("#"):
