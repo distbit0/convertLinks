@@ -23,7 +23,7 @@ logger.add(
     LOG_DIR / "convertTwitter.log",
     rotation="512 KB",
     retention=5,
-    enqueue=True,
+    enqueue=False,
     serialize=False,
 )
 

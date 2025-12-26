@@ -20,7 +20,7 @@ GUIDS_PATH = DATA_DIR / "guidsToGistIds.json"
 HASHES_PATH = DATA_DIR / "textCacheHashes.json"
 LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
-logger.add(LOG_DIR / "write_gist.log", rotation="256 KB", retention=5, enqueue=True)
+logger.add(LOG_DIR / "write_gist.log", rotation="256 KB", retention=5, enqueue=False)
 
 
 def _read_json_file(path: Path) -> dict:

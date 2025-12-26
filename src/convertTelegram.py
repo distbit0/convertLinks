@@ -22,7 +22,7 @@ LOG_DIR = REPO_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 logger.remove()
 logger.add(sys.stdout, level="INFO")
-logger.add(LOG_DIR / "telegram.log", rotation="256 KB", retention=5, enqueue=True)
+logger.add(LOG_DIR / "telegram.log", rotation="256 KB", retention=5, enqueue=False)
 
 
 def extract_chat_id_and_message_id(url):

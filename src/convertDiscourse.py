@@ -14,7 +14,7 @@ logger.add(
     LOG_DIR / "convertDiscourse.log",
     rotation="256 KB",
     retention=5,
-    enqueue=True,
+    enqueue=False,
 )
 
 

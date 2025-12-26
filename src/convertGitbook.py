@@ -15,7 +15,7 @@ logger.add(
     LOG_DIR / "convertGitbook.log",
     rotation="256 KB",
     retention=5,
-    enqueue=True,
+    enqueue=False,
 )
 
 

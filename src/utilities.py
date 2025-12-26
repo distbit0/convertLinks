@@ -40,7 +40,7 @@ logger.add(
     LOG_DIR / "utilities.log",
     rotation="256 KB",
     retention=5,
-    enqueue=True,
+    enqueue=False,
 )
 
 TMP_DIR = REPO_ROOT / "tmp"
