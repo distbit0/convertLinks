@@ -153,11 +153,12 @@ def _summarise_markdown(text: str) -> str:
                 "role": "user",
                 "content": (
                     "Summarize the following markdown into a bullet digest."
+                    "Translate any foreign language text to English."
                     "Avoid embellishment:\n\n"
                     "Instructions for summarising conversations:\n\n"
                     "Preserve links, interesting technical/detailed discussions, conclusions, problems, solutions, points of disagreement, critiques, novel ideas, insights and explanations. Ignore chit chat/throw away comments, chatter, socialising, noise, random news, advertisements, content-less discussion etc. Do not leave things out just because there might be a lot of messages."
                     "Instructions for summarising other text:\n\n"
-                    "Preserve all arguments, explanations, conclusions, novel ideas, insights, important context, contrarian takes, mechanistic details, rationales, implications. Keep succinct while also easy to follow."
+                    "Preserve all arguments, explanations, problems, conclusions, novel ideas, insights, points of disagreements, contradictions, important context, contrarian takes, critiques, mechanistic details, rationales, implications. Keep succinct while also easy to follow."
                     f"\n\nChunk {index + 1} of {total_chunks}:\n\n"
                     f"{chunk_text}"
                 ),
