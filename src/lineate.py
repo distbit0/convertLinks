@@ -143,9 +143,7 @@ def process_url(
                     alwaysConvert = value["alwaysConvert"]
                     forceConvert = "##" in url
                     forceRefresh = forceRefreshAll or "###" in url
-                    if key == "substack.com" and not (
-                        summarise or "jamesguilty" in url
-                    ):
+                    if key == "substack.com" and ("hanania" in url):
                         continue
                     if key == "medium.com" and forceConvertAllUrls:
                         url = convertMediumArticle(url, forceRefresh)
