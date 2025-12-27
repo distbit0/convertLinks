@@ -130,6 +130,7 @@ def process_url(
     forceConvertAllUrls,
     summarise,
     forceNoConvert=False,
+    forceRefreshAll=False,
 ):
     try:
         url = str(originalUrl)
@@ -141,7 +142,7 @@ def process_url(
                     func = value["function"]
                     alwaysConvert = value["alwaysConvert"]
                     forceConvert = "##" in url
-                    forceRefresh = "###" in url
+                    forceRefresh = forceRefreshAll or "###" in url
                     if key == "substack.com" and not (
                         summarise or "jamesguilty" in url
                     ):
@@ -158,7 +159,7 @@ def process_url(
                 and url.startswith(("http://", "https://"))
             ):
                 if summarise or forceConvertAllUrls:
-                    forceRefresh = "###" in url
+                    forceRefresh = forceRefreshAll or "###" in url
                     url = convertArticle(url, forceRefresh)
     except Exception as e:
         print(e)
@@ -185,6 +186,7 @@ def main(
     forceConvertAllUrls,
     summarise=False,
     forceNoConvert=False,
+    forceRefreshAll=False,
 ):
     utilities.set_default_summarise(summarise)
     textFromClipboard = not bool(text)
@@ -207,6 +209,7 @@ def main(
                     forceConvertAllUrls,
                     summarise,
                     forceNoConvert,
+                    forceRefreshAll,
                 )
             ),
             args=(url,),
@@ -254,6 +257,11 @@ def cli():
         action="store_true",
         help="Skip conversion for all URLs, even those marked to always convert.",
     )
+    parser.add_argument(
+        "--force-refresh",
+        action="store_true",
+        help="Force refresh for all converters (equivalent to adding ###).",
+    )
     args = parser.parse_args()
 
     main(
@@ -262,6 +270,7 @@ def cli():
         forceConvertAllUrls=args.force_convert_all,
         summarise=args.summarise,
         forceNoConvert=args.force_no_convert,
+        forceRefreshAll=args.force_refresh,
     )
 
 
