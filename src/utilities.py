@@ -235,6 +235,10 @@ def _summarise_gist_takeaways(text: str) -> str:
     ).strip()
 
 
+def _count_words(text: str) -> int:
+    return len(text.split())
+
+
 def writeGist(
     text,
     name,
@@ -248,10 +252,16 @@ def writeGist(
     adjusted_guid = f"{guid}_summary" if actual_summarise and guid else guid
 
     takeaways_summary = _summarise_gist_takeaways(text)
-    text_to_write = _summarise_markdown(text) if actual_summarise else text
+    body_text = _summarise_markdown(text) if actual_summarise else text
+    word_count = _count_words(body_text)
+    reading_minutes = ceil(word_count / 450) if word_count else 0
+    text_to_write = body_text
     if takeaways_summary:
         text_to_write = (
-            "## Conclusions / Takeaways\n" f"{takeaways_summary}\n\n{text_to_write}"
+            "## Conclusions / Takeaways\n"
+            f"{takeaways_summary}\n"
+            f"**Word count:** {word_count} | **Reading time:** {reading_minutes} min (450 wpm)\n\n"
+            f"{text_to_write}"
         )
     if source_url:
         text_to_write = (
