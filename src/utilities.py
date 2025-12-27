@@ -220,6 +220,7 @@ def _summarise_gist_takeaways(text: str) -> str:
                 "Use this exact format for the percentage line: 'Missed content: X%'."
                 "Then add one line (under 25 words) explaining what the reader misses, which fits the above criteria, in as much detail as possible within the word limit, if the reader only reads the bullets and skips reading the full text. Make sure it is useful/accurate and not overly positive or overly critical, to facilitate an informed decision."
                 "Then add one line (under 25 words) that gives the most compelling yet truthful/accurate critique/explanation/devil's-advocate for why it's not worth reading the rest."
+                "Then add one line (under 25 words) giving the strongest fair rebuttal to the article's own stated conclusions, accurately representing them without straw-manning."
                 "Return only bullets and the added lines, no heading or preamble."
                 "Use '-' as the bullet marker."
                 "If the text contains no conclusions, take-aways, or findings, return a single bullet that says:"
