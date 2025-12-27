@@ -193,6 +193,35 @@ def _summarise_markdown(text: str) -> str:
     return summary
 
 
+def _summarise_gist_takeaways(text: str) -> str:
+    if not text.strip():
+        return ""
+
+    messages = [
+        {
+            "role": "user",
+            "content": (
+                "Extract only the conclusions, take-aways, and findings from the text."
+                "Write a very succinct dot-point list."
+                "Translate any foreign language text to English."
+                "Do not include background, narration, or procedural detail unless it is itself a takeaway."
+                "Preserve critical links only if they are essential to a takeaway."
+                "Return only bullets, no heading or preamble."
+                "Use '-' as the bullet marker."
+                "If the text contains no conclusions, take-aways, or findings, return a single bullet that says:"
+                "'- No clear conclusions, take-aways, or findings.'\n\n"
+                f"{text}"
+            ),
+        }
+    ]
+
+    logger.info("Generating gist takeaways summary")
+    return _call_with_retry(
+        client_factory=lambda: OpenAI(api_key=_get_openai_api_key()),
+        messages=messages,
+    ).strip()
+
+
 def writeGist(
     text,
     name,
@@ -205,9 +234,15 @@ def writeGist(
     actual_summarise = DEFAULT_SUMMARISE if summarise is None else bool(summarise)
     adjusted_guid = f"{guid}_summary" if actual_summarise and guid else guid
 
+    takeaways_summary = _summarise_gist_takeaways(text)
     text_to_write = _summarise_markdown(text) if actual_summarise else text
     if source_url:
         text_to_write = f"[Original]({source_url})\n\n{text_to_write}"
+    if takeaways_summary:
+        text_to_write = (
+            "## Conclusions / Takeaways\n"
+            f"{takeaways_summary}\n\n{text_to_write}"
+        )
 
     deleteMp3sOlderThan(60 * 60 * 12, getAbsPath("tmp/"))
     if not update:
