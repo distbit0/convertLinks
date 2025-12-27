@@ -201,8 +201,8 @@ def _summarise_gist_takeaways(text: str) -> str:
         {
             "role": "user",
             "content": (
-                "Extract only the conclusions, take-aways, and findings from the text."
-                "Write a very succinct dot-point list. Max 5 bullet points. Max 12 words per bullet."
+                "Extract the most interesting/novel/important conclusions, take-aways, implications and findings from the text."
+                "Write a very succinct dot-point list. Max 6 bullet points. Max 12 words per bullet."
                 "Translate any foreign language text to English."
                 "Do not include background, narration, or procedural detail unless it is itself a takeaway."
                 # "After the bullets, add a single line with an information-density rating based on"
@@ -213,12 +213,12 @@ def _summarise_gist_takeaways(text: str) -> str:
                 # "Use this exact format for the rating line: 'Info density: X/10'."
                 # "Choose X from 1-10, where 10 = ~0% repetition/padding, 5 = ~50% repetition/padding,"
                 # " and 1 = ~90-100% repetition/padding."
-                "After the bullets, add a single line estimating what percentage of key ideas,"
-                " arguments, explanations, problems, conclusions, novel ideas, insights, points of disagreement,"
-                " contradictions, important context, contrarian takes, critiques, mechanistic details,"
-                " rationales, implications from the text could not be included in the bullets."
+                "After the bullets, add a single line estimating what percentage of the"
+                " arguments, problems, conclusions, explanations, novel ideas, points of disagreement,"
+                " contrarian takes, critiques, mechanistic details,"
+                " rationales, implications from the text could not be included in the bullets. i.e. not including waffling/repetition/re-statement/padding."
                 "Use this exact format for the percentage line: 'Missed content: X%'."
-                "Then add one line (under 12 words) describing what a reader misses by skipping the full text."
+                "Then add one line (under 25 words) explaining what the reader misses, which fits the above criteria, in as much detail as possible within the word limit, if the reader only reads the bullets and skips reading the full text. Make sure it is useful/accurate and not overly positive or overly critical, to facilitate an informed decision."
                 "Return only bullets and the rating line, no heading or preamble."
                 "Use '-' as the bullet marker."
                 "If the text contains no conclusions, take-aways, or findings, return a single bullet that says:"
