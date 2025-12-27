@@ -258,9 +258,9 @@ def writeGist(
     text_to_write = body_text
     if takeaways_summary:
         text_to_write = (
-            "## Conclusions / Takeaways\n"
-            f"{takeaways_summary}\n"
-            f"**Word count:** {word_count} | **Reading time:** {reading_minutes} min (450 wpm)\n\n"
+            "## Highlights\n "
+            f"{takeaways_summary}\n\n "
+            f"**Word count:** {word_count} | **Reading time:** {reading_minutes} min (450 wpm)\n\n "
             f"{text_to_write}"
         )
     if source_url:
