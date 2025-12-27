@@ -206,7 +206,7 @@ def _summarise_gist_takeaways(text: str) -> str:
                 "Translate any foreign language text to English."
                 "Do not include background, narration, or procedural detail unless it is itself a takeaway."
                 "Preserve critical links only if they are essential to a takeaway."
-                "After the bullets, add a single line with an information-density rating."
+                "After the bullets, add a single line with an information-density (high-signal-to-noise/informative vs low-signal-to-noise/padded) rating."
                 "Use this exact format for the rating line: 'Info density: X/10'."
                 "Choose X from 1-10."
                 "Return only bullets and the rating line, no heading or preamble."
@@ -243,8 +243,7 @@ def writeGist(
         text_to_write = f"[Original]({source_url})\n\n{text_to_write}"
     if takeaways_summary:
         text_to_write = (
-            "## Conclusions / Takeaways\n"
-            f"{takeaways_summary}\n\n{text_to_write}"
+            "## Conclusions / Takeaways\n" f"{takeaways_summary}\n\n{text_to_write}"
         )
 
     deleteMp3sOlderThan(60 * 60 * 12, getAbsPath("tmp/"))

@@ -25,7 +25,10 @@ def normalize_url(url: str) -> str:
 
 
 def strip_tracking_params(
-    url: str, *, drop_params: set[str] | None = None, keep_params: set[str] | None = None
+    url: str,
+    *,
+    drop_params: set[str] | None = None,
+    keep_params: set[str] | None = None,
 ) -> str:
     parsed = urlparse(url)
     if not parsed.query:
@@ -101,7 +104,17 @@ def _looks_like_image_url(url: str) -> bool:
     lowered = url.lower()
     if any(
         lowered.endswith(ext)
-        for ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".tif", ".tiff")
+        for ext in (
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".gif",
+            ".webp",
+            ".svg",
+            ".bmp",
+            ".tif",
+            ".tiff",
+        )
     ):
         return True
     if "substackcdn.com/image" in lowered:
