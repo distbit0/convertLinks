@@ -243,12 +243,12 @@ def writeGist(
 
     takeaways_summary = _summarise_gist_takeaways(text)
     text_to_write = _summarise_markdown(text) if actual_summarise else text
-    if source_url:
-        text_to_write = f"[Original]({source_url})\n\n{text_to_write}"
     if takeaways_summary:
         text_to_write = (
             "## Conclusions / Takeaways\n" f"{takeaways_summary}\n\n{text_to_write}"
         )
+    if source_url:
+        text_to_write = f"[Original]({source_url})\n\n{text_to_write}"
 
     deleteMp3sOlderThan(60 * 60 * 12, getAbsPath("tmp/"))
     if not update:
