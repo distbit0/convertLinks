@@ -202,13 +202,14 @@ def _summarise_gist_takeaways(text: str) -> str:
             "role": "user",
             "content": (
                 "Extract only the conclusions, take-aways, and findings from the text."
-                "Write a very succinct dot-point list."
+                "Write a very succinct dot-point list. Max 6 bullet points."
                 "Translate any foreign language text to English."
                 "Do not include background, narration, or procedural detail unless it is itself a takeaway."
-                "Preserve critical links only if they are essential to a takeaway."
-                "After the bullets, add a single line with an information-density (high-signal-to-noise/informative vs low-signal-to-noise/padded) rating."
+                "After the bullets, add a single line with an information-density rating based on"
+                " how much of the bullet text is direct conclusions/takeaways versus padding/context."
                 "Use this exact format for the rating line: 'Info density: X/10'."
-                "Choose X from 1-10."
+                "Choose X from 1-10, where 10 = almost every word is a takeaway, 5 = about half takeaway,"
+                " and 1 = almost no takeaway content."
                 "Return only bullets and the rating line, no heading or preamble."
                 "Use '-' as the bullet marker."
                 "If the text contains no conclusions, take-aways, or findings, return a single bullet that says:"
