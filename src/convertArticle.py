@@ -37,7 +37,9 @@ def convertArticle(
 
     try:
         html = article_utils.fetch_html(cleaned_url)
-        markdown, title = article_utils.extract_article_markdown(html, cleaned_url)
+        markdown, title = article_utils.extract_article_markdown(
+            html, cleaned_url, include_comments=True
+        )
     except Exception as exc:
         logger.error("Failed to convert {} {}: {}", source_label, cleaned_url, exc)
         return False
