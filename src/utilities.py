@@ -202,17 +202,23 @@ def _summarise_gist_takeaways(text: str) -> str:
             "role": "user",
             "content": (
                 "Extract only the conclusions, take-aways, and findings from the text."
-                "Write a very succinct dot-point list. Max 6 bullet points."
+                "Write a very succinct dot-point list. Max 5 bullet points. Max 12 words per bullet."
                 "Translate any foreign language text to English."
                 "Do not include background, narration, or procedural detail unless it is itself a takeaway."
-                "After the bullets, add a single line with an information-density rating based on"
-                " the percent of the text that is repetition/re-statement/padding/re-iteration"
-                " instead of new ideas, arguments, explanations, problems, conclusions, novel ideas,"
-                " insights, points of disagreements, contradictions, important context, contrarian takes,"
-                " critiques, mechanistic details, rationales, implications."
-                "Use this exact format for the rating line: 'Info density: X/10'."
-                "Choose X from 1-10, where 10 = ~0% repetition/padding, 5 = ~50% repetition/padding,"
-                " and 1 = ~90-100% repetition/padding."
+                # "After the bullets, add a single line with an information-density rating based on"
+                # " the percent of the text that is repetition/re-statement/padding/re-iteration"
+                # " instead of new ideas, arguments, explanations, problems, conclusions, novel ideas,"
+                # " insights, points of disagreements, contradictions, important context, contrarian takes,"
+                # " critiques, mechanistic details, rationales, implications."
+                # "Use this exact format for the rating line: 'Info density: X/10'."
+                # "Choose X from 1-10, where 10 = ~0% repetition/padding, 5 = ~50% repetition/padding,"
+                # " and 1 = ~90-100% repetition/padding."
+                "After the bullets, add a single line estimating what percentage of key ideas,"
+                " arguments, explanations, problems, conclusions, novel ideas, insights, points of disagreement,"
+                " contradictions, important context, contrarian takes, critiques, mechanistic details,"
+                " rationales, implications from the text could not be included in the bullets."
+                "Use this exact format for the percentage line: 'Missed content: X%'."
+                "Then add one line (under 12 words) describing what a reader misses by skipping the full text."
                 "Return only bullets and the rating line, no heading or preamble."
                 "Use '-' as the bullet marker."
                 "If the text contains no conclusions, take-aways, or findings, return a single bullet that says:"
@@ -248,7 +254,9 @@ def writeGist(
             "## Conclusions / Takeaways\n" f"{takeaways_summary}\n\n{text_to_write}"
         )
     if source_url:
-        text_to_write = f"[Original]({source_url})\n\n{text_to_write}"
+        text_to_write = (
+            f"[Original]({source_url})\n\n{text_to_write}\n\n[Original]({source_url})"
+        )
 
     deleteMp3sOlderThan(60 * 60 * 12, getAbsPath("tmp/"))
     if not update:
