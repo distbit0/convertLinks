@@ -277,17 +277,17 @@ def writeGist(
             article_minutes = ceil(article_words / 450) if article_words else 0
             comment_minutes = ceil(comment_words / 450) if comment_words else 0
             word_count_line = (
-                f"**Word count:** Article {_format_count(article_words)}"
-                f" | Comments {_format_count(comment_words)}"
-                f" | Total {_format_count(word_count)}"
-                f" | **Reading time:** Article {article_minutes} min"
-                f" | Comments {comment_minutes} min"
-                f" | Total {reading_minutes} min (450 wpm)"
+                f"**WC** A {_format_count(article_words)}"
+                f" C {_format_count(comment_words)}"
+                f" T {_format_count(word_count)}"
+                f" | **RT** A {article_minutes}m"
+                f" C {comment_minutes}m"
+                f" T {reading_minutes}m (450 wpm)"
             )
         else:
             word_count_line = (
-                f"**Word count:** {_format_count(word_count)}"
-                f" | **Reading time:** {reading_minutes} min (450 wpm)"
+                f"**WC** {_format_count(word_count)}"
+                f" | **RT** {reading_minutes}m (450 wpm)"
             )
         text_to_write = (
             "## Highlights\n "
