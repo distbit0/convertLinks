@@ -158,7 +158,7 @@ def _summarise_markdown(text: str) -> str:
                     "Instructions for summarising conversations:\n\n"
                     "Preserve links, interesting technical/detailed discussions, conclusions, problems, solutions, points of disagreement, critiques, novel ideas, insights and explanations. Ignore chit chat/throw away comments, chatter, socialising, noise, random news, advertisements, content-less discussion etc. Do not leave things out just because there might be a lot of messages."
                     "Instructions for summarising other text:\n\n"
-                    "Preserve all arguments, explanations, problems, conclusions, novel ideas, insights, points of disagreements, contradictions, important context, contrarian takes, critiques, mechanistic details, rationales, implications. Keep succinct while also easy to follow."
+                    "Preserve all arguments, explanations, problems, conclusions, novel ideas, important maths/equations, insights, points of disagreements, contradictions, important context, contrarian takes, critiques, mechanistic details, rationales, implications. Keep succinct while also easy to follow."
                     f"\n\nChunk {index + 1} of {total_chunks}:\n\n"
                     f"{chunk_text}"
                 ),
@@ -239,6 +239,18 @@ def _count_words(text: str) -> int:
     return len(text.split())
 
 
+def _format_count(value: int) -> str:
+    return f"{value:,}"
+
+
+def _split_article_comments(text: str) -> tuple[str, str] | None:
+    marker = "\n## Comments\n"
+    if marker not in text:
+        return None
+    before, _, after = text.partition(marker)
+    return before.strip(), after.strip()
+
+
 def writeGist(
     text,
     name,
@@ -257,10 +269,30 @@ def writeGist(
     reading_minutes = ceil(word_count / 450) if word_count else 0
     text_to_write = body_text
     if takeaways_summary:
+        split_text = _split_article_comments(body_text)
+        if split_text:
+            article_text, comment_text = split_text
+            article_words = _count_words(article_text)
+            comment_words = _count_words(comment_text)
+            article_minutes = ceil(article_words / 450) if article_words else 0
+            comment_minutes = ceil(comment_words / 450) if comment_words else 0
+            word_count_line = (
+                f"**Word count:** Article {_format_count(article_words)}"
+                f" | Comments {_format_count(comment_words)}"
+                f" | Total {_format_count(word_count)}"
+                f" | **Reading time:** Article {article_minutes} min"
+                f" | Comments {comment_minutes} min"
+                f" | Total {reading_minutes} min (450 wpm)"
+            )
+        else:
+            word_count_line = (
+                f"**Word count:** {_format_count(word_count)}"
+                f" | **Reading time:** {reading_minutes} min (450 wpm)"
+            )
         text_to_write = (
             "## Highlights\n "
             f"{takeaways_summary}\n\n "
-            f"**Word count:** {word_count} | **Reading time:** {reading_minutes} min (450 wpm)\n\n "
+            f"{word_count_line}\n\n "
             f"{text_to_write}"
         )
     if source_url:
