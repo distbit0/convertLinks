@@ -201,7 +201,7 @@ def _summarise_gist_takeaways(text: str) -> str:
         {
             "role": "user",
             "content": (
-                "Extract the most interesting/novel/important conclusions, take-aways, implications and findings from the text."
+                "Extract the most interesting/novel/important conclusions, take-aways, implications and findings from the text, in such a way that they make sense on their own."
                 "Write a very succinct dot-point list. Max 6 bullet points. Max 12 words per bullet."
                 "Translate any foreign language text to English."
                 "Do not include background, narration, or procedural detail unless it is itself a takeaway."
@@ -215,10 +215,10 @@ def _summarise_gist_takeaways(text: str) -> str:
                 # " and 1 = ~90-100% repetition/padding."
                 # "After the bullets, add a single line estimating what percentage of the"
                 # "Use this exact format for the percentage line: 'Missed content: X%'."
-                "Then add one line prefixed with '**Missed detail:** ' (under 30 words) explaining what the reader misses, which fits the below criteria, in as much detail as possible within the word limit, if the reader only reads the bullets and skips reading the full text. Make sure it is useful/accurate and not overly positive or overly critical, to facilitate an informed decision."
+                "Then add one line prefixed with '**Missed details:** ' (under 30 words) explaining what the reader misses, which fits the below criteria, in as much detail as possible within the word limit, if the reader only reads the bullets and skips reading the full text. Make sure it is useful/accurate and not overly positive or overly critical, to facilitate an informed decision."
                 "Criteria of what counts: interesting arguments, problems, conclusions, explanations, novel ideas, points of disagreement, contrarian takes, critiques, mechanistic details, rationales, implications etc. not including waffling/repetition/re-statement/padding."
                 "Then add one line prefixed with '**Why skip:** ' (under 30 words) that gives the most compelling, insightful yet truthful/accurate explanation/devil's-advocate for why it's not worth reading the rest."
-                "Then add one line prefixed with '**Best rebuttal:** ' (under 60 words) giving the strongest & most compelling truthful/accurate rebuttal to the article's own stated arguments/conclusions, without straw-manning. Ensure rebuttal is not woke, leftist, politically correct, anti-market but rather is accurate, technical, insightful & compelling for a technical, rationalist, libertarian cryptoecon researcher/developer/engineer/entrepreneur."
+                "Then add one line prefixed with '**Best rebuttal:** ' (under 60 words) giving the strongest & most compelling truthful/accurate rebuttal to the article's own stated arguments/conclusions, without straw-manning. Ensure rebuttal is not woke, leftist, politically correct, anti-market or pro-singleton but rather is accurate, technical, insightful & compelling for a technical, rationalist, libertarian/landian cryptoecon researcher/developer/engineer/entrepreneur."
                 "Return only bullets and the added lines, no heading or preamble."
                 "Use '-' as the bullet marker."
                 "If the text contains no conclusions, take-aways, or findings, return a single bullet that says:"
@@ -277,17 +277,17 @@ def writeGist(
             article_minutes = ceil(article_words / 450) if article_words else 0
             comment_minutes = ceil(comment_words / 450) if comment_words else 0
             word_count_line = (
-                f"**WC** A {_format_count(article_words)}"
-                f" C {_format_count(comment_words)}"
-                f" T {_format_count(word_count)}"
-                f" | **RT** A {article_minutes}m"
-                f" C {comment_minutes}m"
-                f" T {reading_minutes}m (450 wpm)"
+                f"**Word count** Art: {_format_count(article_words)}"
+                f" Com: {_format_count(comment_words)}"
+                f" Tot: {_format_count(word_count)}"
+                f" | **Time** Art: {article_minutes}m"
+                f" Com: {comment_minutes}m"
+                f" Tot: {reading_minutes}m (450 wpm)"
             )
         else:
             word_count_line = (
-                f"**WC** {_format_count(word_count)}"
-                f" | **RT** {reading_minutes}m (450 wpm)"
+                f"**Word count** {_format_count(word_count)}"
+                f" | **Time** {reading_minutes}m (450 wpm)"
             )
         text_to_write = (
             "## Highlights\n "

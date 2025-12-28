@@ -81,8 +81,8 @@ def convertMediumScribe(url, forceRefresh):
     return url
 
 
-def convertLesswrong(url, forceRefresh):
-    url = url.replace("lesswrong.com", "greaterwrong.com").strip()
+def convertGreaterwrong(url, forceRefresh):
+    url = url.replace("greaterwrong.com", "lesswrong.com").strip()
     return url
 
 
@@ -118,7 +118,7 @@ conversion_functions = {
     "medium.com": {"function": convertMediumScribe, "alwaysConvert": True},
     "substack.com": {"function": convertSubstack, "alwaysConvert": True},
     "/t/": {"function": convertDiscourse, "alwaysConvert": True},
-    "lesswrong.com": {"function": convertLesswrong, "alwaysConvert": True},
+    "greaterwrong.com": {"function": convertGreaterwrong, "alwaysConvert": True},
     "https://t.me": {"function": convertTelegram, "alwaysConvert": True},
 }
 
