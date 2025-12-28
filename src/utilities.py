@@ -235,6 +235,20 @@ def _summarise_gist_takeaways(text: str) -> str:
     ).strip()
 
 
+def _strip_highlight_sections(summary: str) -> str:
+    if not summary.strip():
+        return ""
+    filtered_lines = []
+    for line in summary.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("**Why skip:**") or stripped.startswith(
+            "**Best rebuttal:**"
+        ):
+            continue
+        filtered_lines.append(line)
+    return "\n".join(filtered_lines).strip()
+
+
 def _count_words(text: str) -> int:
     return len(text.split())
 
@@ -267,7 +281,7 @@ def writeGist(
     body_text = _summarise_markdown(text) if actual_summarise else text
     word_count = _count_words(body_text)
     reading_minutes = ceil(word_count / 450) if word_count else 0
-    text_to_write = body_text
+    word_count_line = ""
     if takeaways_summary:
         split_text = _split_article_comments(body_text)
         if split_text:
@@ -289,25 +303,51 @@ def writeGist(
                 f"**Word count** {_format_count(word_count)}"
                 f" | **Time** {reading_minutes}m (450 wpm)"
             )
-        text_to_write = (
+
+    def build_gist_text(highlights_summary: str) -> str:
+        if not highlights_summary:
+            return body_text
+        return (
             "## Highlights\n "
-            f"{takeaways_summary}\n\n "
+            f"{highlights_summary}\n\n "
             f"{word_count_line}\n\n "
-            f"{text_to_write}"
+            f"{body_text}"
         )
-    if source_url:
-        text_to_write = (
-            f"[Original]({source_url})\n\n{text_to_write}\n\n[Original]({source_url})"
-        )
+
+    def wrap_with_links(content: str, highlight_url: str | None) -> str:
+        if not source_url:
+            return content
+        top_links = f"[Original]({source_url})"
+        if highlight_url:
+            top_links = f"{top_links} [highlights]({highlight_url})"
+        return f"{top_links}\n\n{content}\n\n[Original]({source_url})"
 
     deleteMp3sOlderThan(60 * 60 * 12, getAbsPath("tmp/"))
     if not update:
         gistUrl = getGistUrl(adjusted_guid)
         if gistUrl:
             return gistUrl
+
+    highlights_url = None
+    if source_url:
+        if not adjusted_guid:
+            raise ValueError("source_url requires guid to create highlights gist.")
+        highlights_guid = f"{adjusted_guid}_highlights"
+        stripped_summary = _strip_highlight_sections(takeaways_summary)
+        highlights_text = wrap_with_links(build_gist_text(stripped_summary), None)
+        highlights_tmp = (
+            TMP_DIR
+            / f"{int(time.time())}.{random.randint(1000000000, 9999999999)}.highlights.txt"
+        )
+        highlights_tmp.write_text(highlights_text)
+        highlights_url = writeContent(
+            None, highlights_guid, f"{name} (highlights)", highlights_tmp
+        )
+        highlights_tmp.unlink()
     unixTime = str(int(time.time()))
     randomNumber = str(random.randint(1000000000, 9999999999))
     tmpFile = getAbsPath(f"tmp/{unixTime}.{randomNumber}.txt")
+    text_to_write = wrap_with_links(build_gist_text(takeaways_summary), highlights_url)
     with open(tmpFile, "w") as f:
         f.write(text_to_write)
     gistUrl = "https://gist.github.com/" + gist_id if gist_id else None
